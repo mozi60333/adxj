@@ -47,13 +47,13 @@ export function Contact() {
           </div>
 
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-6 flex flex-col sm:flex-row md:flex-col gap-5 items-center md:items-start">
-            <div className="shrink-0 w-32 h-32 rounded-2xl bg-white border border-blue-100 p-2 shadow-sm">
+            <div className="shrink-0 w-40 h-40 rounded-2xl bg-white border border-blue-100 p-2 shadow-sm flex items-center justify-center">
               <img
                 src="/wecom-qr.png"
                 alt="企业微信二维码"
-                width={128}
-                height={128}
-                className="w-full h-full object-contain"
+                width={144}
+                height={144}
+                className="block w-36 h-36 object-contain"
               />
             </div>
             <div>
