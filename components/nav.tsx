@@ -16,9 +16,9 @@ export function Nav() {
           <Link href="/developer" className="hover:text-blue-600 transition-colors flex items-center gap-1">开发者与技术服务</Link>
           <Link href="/media" className="hover:text-blue-600 transition-colors flex items-center gap-1">全渠道媒体买量</Link>
         </div>
-        <button className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-full hover:bg-blue-700 transition-colors shadow-md shadow-blue-200">
+        <Link href="#contact" className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-full hover:bg-blue-700 transition-colors shadow-md shadow-blue-200">
           联系合作
-        </button>
+        </Link>
       </div>
     </nav>
   );
