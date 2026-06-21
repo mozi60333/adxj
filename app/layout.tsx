@@ -47,10 +47,6 @@ export const metadata: Metadata = {
     description: '跨境出海、海外投放、开发者上架与企业增长服务。',
     images: [absoluteUrl(site.defaultOgImage)],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
 };
 
 const organizationJsonLd = {
