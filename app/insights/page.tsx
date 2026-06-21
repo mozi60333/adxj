@@ -12,7 +12,7 @@ import { articles, insightCategories } from "./articles";
 import { InsightsList } from "./insights-list";
 
 const description =
-  "ADXJ 出海资讯沉淀 24 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。";
+  `ADXJ 出海资讯沉淀 ${articles.length} 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。`;
 const path = "/insights";
 
 export const metadata: Metadata = {
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "出海资讯 | ADXJ 蓝鲸出海",
-    description: "24 篇开发者出海、海外投放增长、ASO 优化、账户风控与企业出海洞察文章。",
+    description: `${articles.length} 篇开发者出海、海外投放增长、ASO 优化、账户风控与企业出海洞察文章。`,
     images: [absoluteUrl(articles[0].coverImage)],
   },
 };

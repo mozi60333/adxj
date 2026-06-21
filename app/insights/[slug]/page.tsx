@@ -22,6 +22,29 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+function renderParagraphWithLinks(paragraph: string) {
+  const telegramPattern = /(Telegram @M7HHHH|@M7HHHH)/g;
+  const parts = paragraph.split(telegramPattern);
+
+  return parts.map((part, index) => {
+    if (part === "Telegram @M7HHHH" || part === "@M7HHHH") {
+      return (
+        <a
+          key={`${part}-${index}`}
+          href="https://t.me/M7HHHH"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold text-blue-700 underline decoration-blue-200 underline-offset-4 transition-colors hover:text-blue-900 hover:decoration-blue-500"
+        >
+          {part}
+        </a>
+      );
+    }
+
+    return part;
+  });
+}
+
 export function generateStaticParams() {
   return articles.map((article) => ({ slug: article.slug }));
 }
@@ -174,7 +197,7 @@ export default async function InsightArticlePage({ params }: PageProps) {
                   <div className="space-y-4">
                     {section.paragraphs.map((paragraph) => (
                       <p key={paragraph} className="text-[15px] leading-8 text-slate-700">
-                        {paragraph}
+                        {renderParagraphWithLinks(paragraph)}
                       </p>
                     ))}
                   </div>
