@@ -1,20 +1,27 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ADXJ Static Website
 
-# Run and deploy your AI Studio app
+ADXJ corporate portal built with Next.js App Router and exported as a static website.
 
-This contains everything you need to run your app locally.
+## Development
 
-View your app in AI Studio: https://ai.studio/apps/d740910d-8f84-4eba-a1aa-21b69c160188
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+
+   ```bash
+   npm install
+   ```
+
+2. Start the local dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Build the static site:
+
+   ```bash
+   npm run build
+   ```
+
+The static export is written to `out/`.

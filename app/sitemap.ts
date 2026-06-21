@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { articles, siteUrl } from "./insights/articles";
 
+export const dynamic = "force-static";
+
 const staticRoutes = [
   "",
   "/bluewhale",
