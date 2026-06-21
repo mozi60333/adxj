@@ -1,3 +1,5 @@
+import { newInsightArticles } from "./extra-articles";
+
 export type InsightCategory = "开发者出海" | "海外投放增长" | "出海企业洞察";
 
 export type ArticleSection = {
@@ -27,6 +29,7 @@ export const insightCategories: InsightCategory[] = [
 ];
 
 export const articles: InsightArticle[] = [
+  ...newInsightArticles,
   {
     title: "iOS 出海应用上架常见被拒原因及处理思路",
     slug: "ios-app-store-review-rejections-overseas",
@@ -620,4 +623,3 @@ export const articles: InsightArticle[] = [
 export function getArticleBySlug(slug: string) {
   return articles.find((article) => article.slug === slug);
 }
-

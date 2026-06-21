@@ -12,7 +12,7 @@ import { InsightsList } from "./insights-list";
 export const metadata: Metadata = {
   title: "出海资讯 | ADXJ 蓝鲸出海",
   description:
-    "ADXJ 出海资讯聚焦开发者出海、海外投放增长、出海企业洞察，覆盖 App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷与工具应用订阅增长。",
+    "ADXJ 出海资讯沉淀 24 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。",
   keywords: [
     "出海资讯",
     "跨境出海",
@@ -24,11 +24,16 @@ export const metadata: Metadata = {
     "TikTok Ads",
     "Telegram Ads",
     "AI 应用出海",
+    "ASO 优化",
+    "广告账户风控",
+    "海外网盟 CPA",
+    "私域转化",
+    "订阅转化",
   ],
   alternates: { canonical: "/insights" },
   openGraph: {
     title: "出海资讯 | ADXJ 蓝鲸出海",
-    description: "面向出海企业、开发者和增长团队的海外上架、投放、风控与市场洞察。",
+    description: "面向出海企业、开发者和增长团队的海外上架、ASO、投放、风控与市场洞察。",
     url: `${siteUrl}/insights`,
     siteName: "ADXJ",
     type: "website",
@@ -45,7 +50,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "出海资讯 | ADXJ 蓝鲸出海",
-    description: "开发者出海、海外投放增长、出海企业洞察的实操型内容矩阵。",
+    description: "24 篇开发者出海、海外投放增长、ASO 优化、账户风控与企业出海洞察文章。",
     images: [`${siteUrl}${articles[0].coverImage}`],
   },
 };
@@ -100,7 +105,7 @@ export default function InsightsPage() {
               </span>
             </h1>
             <p className="mt-8 max-w-3xl text-[15px] leading-relaxed text-slate-600">
-              围绕开发者出海、海外投放增长和出海企业洞察，沉淀 App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷与工具应用的实操内容。
+              围绕开发者出海、海外投放增长和出海企业洞察，沉淀 App Store、Google Play、ASO 优化、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与工具应用订阅增长的实操内容。
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
@@ -155,4 +160,3 @@ export default function InsightsPage() {
     </div>
   );
 }
-

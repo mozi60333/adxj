@@ -12,11 +12,11 @@ const staticRoutes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date("2026-06-20");
+  const lastModified = new Date("2026-06-21");
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
     url: `${siteUrl}${route}`,
     lastModified,
-    changeFrequency: route === "" ? "weekly" : "monthly",
+    changeFrequency: route === "" ? "weekly" : route === "/insights" ? "daily" : "monthly",
     priority: route === "" ? 1 : route === "/insights" ? 0.9 : 0.8,
   }));
 
