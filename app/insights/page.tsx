@@ -6,13 +6,18 @@ import { Contact } from "@/components/contact";
 import { Footer } from "@/components/footer";
 import { MatrixBackground } from "@/components/matrix-pattern";
 import { Nav } from "@/components/nav";
-import { articles, insightCategories, siteUrl } from "./articles";
+import { JsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
+import { articles, insightCategories } from "./articles";
 import { InsightsList } from "./insights-list";
+
+const description =
+  "ADXJ 出海资讯沉淀 24 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。";
+const path = "/insights";
 
 export const metadata: Metadata = {
   title: "出海资讯 | ADXJ 蓝鲸出海",
-  description:
-    "ADXJ 出海资讯沉淀 24 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。",
+  description,
   keywords: [
     "出海资讯",
     "跨境出海",
@@ -30,17 +35,17 @@ export const metadata: Metadata = {
     "私域转化",
     "订阅转化",
   ],
-  alternates: { canonical: "/insights" },
+  alternates: { canonical: canonicalUrl(path) },
   openGraph: {
     title: "出海资讯 | ADXJ 蓝鲸出海",
     description: "面向出海企业、开发者和增长团队的海外上架、ASO、投放、风控与市场洞察。",
-    url: `${siteUrl}/insights`,
-    siteName: "ADXJ",
+    url: canonicalUrl(path),
+    siteName: site.name,
     type: "website",
-    locale: "zh_CN",
+    locale: site.locale,
     images: [
       {
-        url: `${siteUrl}${articles[0].coverImage}`,
+        url: absoluteUrl(articles[0].coverImage),
         width: 1672,
         height: 941,
         alt: articles[0].coverAlt,
@@ -51,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "出海资讯 | ADXJ 蓝鲸出海",
     description: "24 篇开发者出海、海外投放增长、ASO 优化、账户风控与企业出海洞察文章。",
-    images: [`${siteUrl}${articles[0].coverImage}`],
+    images: [absoluteUrl(articles[0].coverImage)],
   },
 };
 
@@ -61,17 +66,22 @@ const collectionJsonLd = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   name: "ADXJ 出海资讯",
-  url: `${siteUrl}/insights`,
-  description: metadata.description,
+  url: canonicalUrl(path),
+  description,
   about: insightCategories,
   mainEntity: articles.map((article) => ({
     "@type": "Article",
     headline: article.title,
-    url: `${siteUrl}/insights/${article.slug}`,
-    image: `${siteUrl}${article.coverImage}`,
+    url: canonicalUrl(`/insights/${article.slug}`),
+    image: absoluteUrl(article.coverImage),
     datePublished: article.publishedAt,
   })),
 };
+
+const breadcrumbJsonLdData = breadcrumbJsonLd([
+  { name: "首页", path: "/" },
+  { name: "出海资讯", path },
+]);
 
 export default function InsightsPage() {
   const featured = articles[0];
@@ -79,10 +89,7 @@ export default function InsightsPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-200 selection:text-blue-950">
       <Nav />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
-      />
+      <JsonLd data={[collectionJsonLd, breadcrumbJsonLdData]} />
 
       <section className="relative overflow-hidden border-b border-slate-200 bg-white px-6 py-20 md:px-10 md:py-24">
         <MatrixBackground />

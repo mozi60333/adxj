@@ -20,8 +20,6 @@ export type InsightArticle = {
   content: ArticleSection[];
 };
 
-export const siteUrl = "https://adxj.com";
-
 export const insightCategories: InsightCategory[] = [
   "开发者出海",
   "海外投放增长",

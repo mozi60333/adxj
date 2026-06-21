@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
-import { articles, siteUrl } from "./insights/articles";
+import { canonicalUrl } from "@/lib/site";
+import { articles } from "./insights/articles";
 
 export const dynamic = "force-static";
 
@@ -16,7 +17,7 @@ const staticRoutes = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date("2026-06-21");
   const staticEntries: MetadataRoute.Sitemap = staticRoutes.map((route) => ({
-    url: `${siteUrl}${route}`,
+    url: canonicalUrl(route || "/"),
     lastModified,
     changeFrequency: route === "" ? "weekly" : route === "/insights" ? "daily" : "monthly",
     priority: route === "" ? 1 : route === "/insights" ? 0.9 : 0.8,
@@ -25,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...staticEntries,
     ...articles.map((article) => ({
-      url: `${siteUrl}/insights/${article.slug}`,
+      url: canonicalUrl(`/insights/${article.slug}`),
       lastModified: new Date(article.publishedAt),
       changeFrequency: "monthly" as const,
       priority: 0.75,

@@ -14,7 +14,9 @@ import {
 import { Footer } from "@/components/footer";
 import { MatrixBackground } from "@/components/matrix-pattern";
 import { Nav } from "@/components/nav";
-import { articles, getArticleBySlug, siteUrl } from "../articles";
+import { JsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
+import { articles, getArticleBySlug } from "../articles";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -32,27 +34,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title: "出海资讯文章 | ADXJ",
       description: "ADXJ 出海资讯文章。",
+      alternates: { canonical: canonicalUrl("/insights") },
     };
   }
+
+  const articleUrl = canonicalUrl(`/insights/${article.slug}`);
 
   return {
     title: `${article.title} | ADXJ 出海资讯`,
     description: article.excerpt,
     keywords: article.keywords,
-    alternates: { canonical: `/insights/${article.slug}` },
+    alternates: { canonical: articleUrl },
     openGraph: {
       title: article.title,
       description: article.excerpt,
-      url: `${siteUrl}/insights/${article.slug}`,
-      siteName: "ADXJ",
+      url: articleUrl,
+      siteName: site.name,
       type: "article",
-      locale: "zh_CN",
+      locale: site.locale,
       publishedTime: article.publishedAt,
       authors: ["ADXJ 蓝鲸出海"],
       tags: article.keywords,
       images: [
         {
-          url: `${siteUrl}${article.coverImage}`,
+          url: absoluteUrl(article.coverImage),
           width: 1672,
           height: 941,
           alt: article.coverAlt,
@@ -63,7 +68,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
-      images: [`${siteUrl}${article.coverImage}`],
+      images: [absoluteUrl(article.coverImage)],
     },
   };
 }
@@ -76,69 +81,43 @@ export default async function InsightArticlePage({ params }: PageProps) {
     notFound();
   }
 
-  const articleUrl = `${siteUrl}/insights/${article.slug}`;
+  const articleUrl = canonicalUrl(`/insights/${article.slug}`);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
     description: article.excerpt,
-    image: `${siteUrl}${article.coverImage}`,
+    image: absoluteUrl(article.coverImage),
     datePublished: article.publishedAt,
     dateModified: article.publishedAt,
     author: {
       "@type": "Organization",
       name: "ADXJ 蓝鲸出海",
-      url: siteUrl,
+      url: canonicalUrl("/"),
     },
     publisher: {
       "@type": "Organization",
-      name: "ADXJ",
-      url: siteUrl,
+      name: site.name,
+      url: canonicalUrl("/"),
       logo: {
         "@type": "ImageObject",
-        url: `${siteUrl}/wecom-qr-v2.png`,
+        url: absoluteUrl(site.logoImage),
       },
     },
     mainEntityOfPage: articleUrl,
     keywords: article.keywords.join(", "),
   };
 
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "首页",
-        item: siteUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "出海资讯",
-        item: `${siteUrl}/insights`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: article.title,
-        item: articleUrl,
-      },
-    ],
-  };
+  const breadcrumbJsonLdData = breadcrumbJsonLd([
+    { name: "首页", path: "/" },
+    { name: "出海资讯", path: "/insights" },
+    { name: article.title, path: `/insights/${article.slug}` },
+  ]);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-200 selection:text-blue-950">
       <Nav />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <JsonLd data={[articleJsonLd, breadcrumbJsonLdData]} />
 
       <article>
         <header className="relative overflow-hidden border-b border-slate-200 bg-white px-6 py-16 md:px-10 md:py-20">
@@ -272,4 +251,3 @@ export default async function InsightArticlePage({ params }: PageProps) {
     </div>
   );
 }
-

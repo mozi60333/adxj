@@ -1,13 +1,14 @@
 import type {Metadata} from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { JsonLd } from '@/lib/seo';
+import { absoluteUrl, canonicalUrl, site } from '@/lib/site';
 import './globals.css'; // Global styles
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' });
-const siteUrl = 'https://adxj.com';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(site.url),
   title: {
     default: 'ADXJ | 蓝鲸出海全球化效果营销中枢',
     template: '%s | ADXJ',
@@ -25,19 +26,26 @@ export const metadata: Metadata = {
     'TikTok Ads',
     'Telegram Ads',
   ],
-  alternates: { canonical: '/' },
+  alternates: { canonical: canonicalUrl('/') },
   openGraph: {
     title: 'ADXJ | 蓝鲸出海全球化效果营销中枢',
     description: '面向出海企业的开发者服务、海外投放、网盟发行、社群资源与增长诊断。',
-    url: siteUrl,
-    siteName: 'ADXJ',
-    locale: 'zh_CN',
+    url: canonicalUrl('/'),
+    siteName: site.name,
+    locale: site.locale,
     type: 'website',
+    images: [
+      {
+        url: absoluteUrl(site.defaultOgImage),
+        alt: 'ADXJ 蓝鲸出海全球化效果营销中枢',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ADXJ | 蓝鲸出海全球化效果营销中枢',
     description: '跨境出海、海外投放、开发者上架与企业增长服务。',
+    images: [absoluteUrl(site.defaultOgImage)],
   },
   robots: {
     index: true,
@@ -48,22 +56,23 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'ADXJ',
+  name: site.name,
   alternateName: ['蓝鲸出海', '香港蓝鲸网络有限公司'],
-  url: siteUrl,
-  email: 'business@adxj.com',
+  url: canonicalUrl('/'),
+  email: site.email,
   foundingDate: '2016',
+  logo: absoluteUrl(site.logoImage),
   brand: {
     '@type': 'Brand',
-    name: 'ADXJ',
+    name: site.name,
   },
-  sameAs: ['https://adxj.com'],
+  sameAs: [canonicalUrl('/')],
   contactPoint: [
     {
       '@type': 'ContactPoint',
       contactType: 'business cooperation',
-      email: 'business@adxj.com',
-      availableLanguage: ['zh-CN', 'en'],
+      email: site.email,
+      availableLanguage: [site.language, 'en'],
     },
   ],
 };
@@ -71,12 +80,12 @@ const organizationJsonLd = {
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'ADXJ',
-  url: siteUrl,
-  inLanguage: 'zh-CN',
+  name: site.name,
+  url: canonicalUrl('/'),
+  inLanguage: site.language,
   publisher: {
     '@type': 'Organization',
-    name: 'ADXJ',
+    name: site.name,
   },
 };
 
@@ -84,14 +93,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="zh-CN">
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-        />
+        <JsonLd data={organizationJsonLd} />
+        <JsonLd data={websiteJsonLd} />
         {children}
       </body>
     </html>
