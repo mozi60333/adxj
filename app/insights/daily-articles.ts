@@ -1,7 +1,9 @@
+import { dailySeoArticles20260625 } from "./daily-articles-2026-06-25";
 import { dailySeoArticles20260623 } from "./daily-articles-2026-06-23";
 import type { InsightArticle } from "./articles";
 
 export const dailySeoArticles: InsightArticle[] = [
+  ...dailySeoArticles20260625,
   ...dailySeoArticles20260623,
   {
     title: "Google Play 账号关联被封怎么办？ADXJ 帮团队找回上架节奏的 5 步",
