@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { JsonLd, breadcrumbJsonLd, serviceJsonLd } from "@/lib/seo";
-import { canonicalUrl, site } from "@/lib/site";
+import { JsonLd, breadcrumbJsonLd, faqPageJsonLd, serviceJsonLd } from "@/lib/seo";
+import { serviceFaqs } from "@/lib/seo-content";
+import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 
 const description =
   "ADXJ 提供 Facebook、Google、TikTok、Telegram Ads、X 等海外媒体投放代运营、CPA/ROAS 优化、素材测试和广告账户风控服务。";
@@ -9,7 +10,7 @@ const path = "/media";
 export const metadata: Metadata = {
   title: "媒体买量 | 海外广告投放与 ROAS 增长",
   description,
-  keywords: ["海外投放", "媒体买量", "Facebook 投放", "Google Ads", "TikTok Ads", "Telegram Ads", "ROAS"],
+  keywords: ["海外广告投放", "媒体买量", "Meta Ads", "Google Ads", "TikTok Ads", "Telegram Ads", "ROAS 增长"],
   alternates: { canonical: canonicalUrl(path) },
   openGraph: {
     title: "媒体买量 | 海外广告投放与 ROAS 增长",
@@ -18,6 +19,20 @@ export const metadata: Metadata = {
     siteName: site.name,
     type: "website",
     locale: site.locale,
+    images: [
+      {
+        url: absoluteUrl(site.defaultOgImage),
+        width: 1200,
+        height: 630,
+        alt: "ADXJ 媒体买量与海外广告投放服务",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "媒体买量 | 海外广告投放与 ROAS 增长",
+    description,
+    images: [absoluteUrl(site.defaultOgImage)],
   },
 };
 
@@ -32,6 +47,7 @@ const structuredData = [
     path,
     serviceType: "海外广告投放与 ROAS 增长服务",
   }),
+  faqPageJsonLd(serviceFaqs.media),
 ];
 
 export default function MediaLayout({ children }: { children: React.ReactNode }) {

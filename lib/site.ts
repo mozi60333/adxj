@@ -5,6 +5,7 @@ export const site = {
   locale: "zh_CN",
   language: "zh-CN",
   email: "business@adxj.com",
+  telegramUrl: "https://t.me/M7HHHH",
   defaultOgImage: "/brand/adxj-logo-horizontal-full.png",
   logoImage: "/brand/adxj-logo-horizontal.png",
 };

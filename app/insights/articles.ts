@@ -1,5 +1,6 @@
 import { dailySeoArticles } from "./daily-articles";
 import { newInsightArticles } from "./extra-articles";
+import type { InsightTopicSlug } from "./topics";
 
 export type InsightCategory = "开发者出海" | "海外投放增长" | "出海企业洞察";
 
@@ -17,6 +18,9 @@ export type InsightArticle = {
   coverImage: string;
   coverAlt: string;
   publishedAt: string;
+  updatedAt?: string;
+  topic?: InsightTopicSlug;
+  relatedSlugs?: string[];
   readTime: string;
   content: ArticleSection[];
 };

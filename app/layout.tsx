@@ -6,9 +6,12 @@ import './globals.css'; // Global styles
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' });
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
+  applicationName: site.name,
+  publisher: site.name,
   title: {
     default: 'ADXJ | 蓝鲸出海全球化效果营销中枢',
     template: '%s | ADXJ',
@@ -26,6 +29,18 @@ export const metadata: Metadata = {
     'TikTok Ads',
     'Telegram Ads',
   ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
+  ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
   alternates: { canonical: canonicalUrl('/') },
   openGraph: {
     title: 'ADXJ | 蓝鲸出海全球化效果营销中枢',
@@ -37,6 +52,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: absoluteUrl(site.defaultOgImage),
+        width: 1200,
+        height: 630,
         alt: 'ADXJ 蓝鲸出海全球化效果营销中枢',
       },
     ],
@@ -62,7 +79,7 @@ const organizationJsonLd = {
     '@type': 'Brand',
     name: site.name,
   },
-  sameAs: [canonicalUrl('/')],
+  sameAs: [canonicalUrl('/'), site.telegramUrl],
   contactPoint: [
     {
       '@type': 'ContactPoint',

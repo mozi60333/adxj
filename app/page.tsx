@@ -144,6 +144,9 @@ export default function Home() {
               <Link href="/community" className="w-full inline-flex items-center justify-center text-blue-600 text-xs font-bold uppercase tracking-widest hover:text-white hover:bg-blue-600 transition-all bg-blue-50 px-4 py-3.5 rounded-xl border border-blue-100 hover:border-transparent group/btn">
                 了解详情 <ArrowRight className="w-4 h-4 ml-1.5 group-hover/btn:translate-x-1 transition-transform" />
               </Link>
+              <Link href="/insights/topics/telegram" className="mt-3 inline-flex text-[11px] font-bold text-blue-700 hover:text-blue-900">
+                查看 Telegram 私域专题
+              </Link>
             </div>
           </motion.div>
 
@@ -194,6 +197,14 @@ export default function Home() {
               <Link href="/developer" className="w-full inline-flex items-center justify-center text-slate-700 text-xs font-bold uppercase tracking-widest hover:text-white hover:bg-slate-800 transition-all bg-slate-50 px-4 py-3.5 rounded-xl border border-slate-200 hover:border-transparent group/btn">
                 了解详情 <ArrowRight className="w-4 h-4 ml-1.5 group-hover/btn:translate-x-1 transition-transform" />
               </Link>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link href="/insights/topics/app-store" className="text-[11px] font-bold text-slate-600 hover:text-blue-700">
+                  App Store 专题
+                </Link>
+                <Link href="/insights/topics/google-play" className="text-[11px] font-bold text-slate-600 hover:text-blue-700">
+                  Google Play 专题
+                </Link>
+              </div>
             </div>
           </motion.div>
 
@@ -243,6 +254,17 @@ export default function Home() {
               <Link href="/media" className="w-full inline-flex items-center justify-center text-blue-900 text-xs font-bold uppercase tracking-widest hover:text-white hover:bg-blue-600 transition-all bg-white px-4 py-3.5 rounded-xl border border-blue-100 hover:border-transparent shadow-lg shadow-white/10 group/btn">
                 了解详情 <ArrowRight className="w-4 h-4 ml-1.5 group-hover/btn:translate-x-1 transition-transform" />
               </Link>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Link href="/insights/topics/meta-ads" className="text-[11px] font-bold text-blue-200 hover:text-white">
+                  Meta Ads 专题
+                </Link>
+                <Link href="/insights/topics/tiktok-ads" className="text-[11px] font-bold text-blue-200 hover:text-white">
+                  TikTok 专题
+                </Link>
+                <Link href="/insights/topics/cpa-network" className="text-[11px] font-bold text-blue-200 hover:text-white">
+                  CPA 专题
+                </Link>
+              </div>
             </div>
           </motion.div>
 

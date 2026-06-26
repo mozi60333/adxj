@@ -1,4 +1,5 @@
 import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
+import type { FaqItem } from "@/lib/seo-content";
 
 type BreadcrumbItem = {
   name: string;
@@ -57,5 +58,20 @@ export function serviceJsonLd({
       "@type": "Place",
       name: "Global",
     },
+  };
+}
+
+export function faqPageJsonLd(items: FaqItem[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
   };
 }

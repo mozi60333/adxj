@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import {
@@ -28,6 +29,9 @@ import { Contact } from "@/components/contact";
 import { Footer } from "@/components/footer";
 import { MatrixBackground } from "@/components/matrix-pattern";
 import { Nav } from "@/components/nav";
+import { SeoCaseLinks } from "@/components/seo-case-links";
+import { SeoFaqSection } from "@/components/seo-faq-section";
+import { serviceCaseSlugs, serviceFaqs } from "@/lib/seo-content";
 import {
   featuredProducts,
   googlePlayApps,
@@ -162,11 +166,12 @@ function AppCard({ app, featured = false }: { app: StoreApp; featured?: boolean 
       }`}
     >
       <div className="flex items-start gap-4">
-        <img
+        <Image
           src={app.icon}
           alt={`${app.name} icon`}
+          width={56}
+          height={56}
           className="h-14 w-14 shrink-0 rounded-2xl border border-slate-100 object-cover shadow-sm"
-          loading="lazy"
         />
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap gap-1.5">
@@ -479,6 +484,20 @@ export default function BlueWhalePage() {
             ))}
           </div>
         </section>
+
+        <div className="space-y-8">
+          <SeoCaseLinks
+            title="蓝鲸出海生态相关案例"
+            description="从 AI 应用、SLOTS、现金贷和海外增长案例进入，快速判断当前项目适合先做上架、投放还是资源对接。"
+            slugs={serviceCaseSlugs.bluewhale}
+            topicSlugs={["ai-apps", "slots", "cash-loan", "cpa-network"]}
+          />
+          <SeoFaqSection
+            items={serviceFaqs.bluewhale}
+            title="蓝鲸出海常见咨询问题"
+            description="将项目品类、目标地区和当前卡点发给 ADXJ，可更快进入上架、投放、风控或商务资源判断。"
+          />
+        </div>
       </main>
 
       <Contact />

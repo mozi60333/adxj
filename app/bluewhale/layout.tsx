@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { JsonLd, breadcrumbJsonLd, serviceJsonLd } from "@/lib/seo";
-import { canonicalUrl, site } from "@/lib/site";
+import { JsonLd, breadcrumbJsonLd, faqPageJsonLd, serviceJsonLd } from "@/lib/seo";
+import { serviceFaqs } from "@/lib/seo-content";
+import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 
 const description =
   "蓝鲸出海是香港蓝鲸网络有限公司旗下母品牌，覆盖跨境电商、海外广告投放、开发者服务、跨境软件开发、跨境支付、社群与网盟发行。";
@@ -9,7 +10,7 @@ const path = "/bluewhale";
 export const metadata: Metadata = {
   title: "蓝鲸出海 | 母品牌与企业产品矩阵",
   description,
-  keywords: ["蓝鲸出海", "香港蓝鲸网络有限公司", "ADXJ", "跨境出海", "网盟发行", "开发者服务"],
+  keywords: ["蓝鲸出海", "香港蓝鲸网络有限公司", "ADXJ", "跨境出海", "出海增长服务", "网盟发行", "开发者服务"],
   alternates: { canonical: canonicalUrl(path) },
   openGraph: {
     title: "蓝鲸出海 | 母品牌与企业产品矩阵",
@@ -18,6 +19,20 @@ export const metadata: Metadata = {
     siteName: site.name,
     type: "website",
     locale: site.locale,
+    images: [
+      {
+        url: absoluteUrl(site.defaultOgImage),
+        width: 1200,
+        height: 630,
+        alt: "蓝鲸出海与 ADXJ 企业产品矩阵",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "蓝鲸出海 | 母品牌与企业产品矩阵",
+    description,
+    images: [absoluteUrl(site.defaultOgImage)],
   },
 };
 
@@ -32,6 +47,7 @@ const structuredData = [
     path,
     serviceType: "跨境增长生态服务",
   }),
+  faqPageJsonLd(serviceFaqs.bluewhale),
 ];
 
 export default function BlueWhaleLayout({ children }: { children: React.ReactNode }) {

@@ -4,6 +4,9 @@ import { Footer } from "@/components/footer";
 import { Contact } from "@/components/contact";
 import { GrowthCurve } from "@/components/growth-curve";
 import { DayZeroBadge } from "@/components/day-zero-badge";
+import { SeoCaseLinks } from "@/components/seo-case-links";
+import { SeoFaqSection } from "@/components/seo-faq-section";
+import { serviceCaseSlugs, serviceFaqs } from "@/lib/seo-content";
 import { 
   ArrowRight, 
   Target, 
@@ -170,6 +173,20 @@ export default function MediaPage() {
           </div>
         </section>
 
+        <div className="space-y-8">
+          <SeoCaseLinks
+            title="海外投放与网盟增长案例"
+            description="从 Meta、TikTok、CPA 网盟和自动化投放问题进入，快速定位素材、事件、预算、结算和质量回传卡点。"
+            slugs={serviceCaseSlugs.media}
+            topicSlugs={["meta-ads", "tiktok-ads", "cpa-network", "cash-loan"]}
+          />
+          <SeoFaqSection
+            items={serviceFaqs.media}
+            title="媒体买量常见问题"
+            description="咨询时建议准备账户结构、素材列表、事件回传、落地页、商店页和后端收入数据。"
+          />
+        </div>
+
       </main>
 
       <Contact />
@@ -177,4 +194,3 @@ export default function MediaPage() {
     </div>
   );
 }
-

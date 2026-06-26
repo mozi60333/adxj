@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 
 import { Contact } from "@/components/contact";
+import { SeoCaseLinks } from "@/components/seo-case-links";
+import { SeoFaqSection } from "@/components/seo-faq-section";
+import { serviceCaseSlugs, serviceFaqs } from "@/lib/seo-content";
 
 export default function DeveloperPage() {
   return (
@@ -258,6 +261,22 @@ export default function DeveloperPage() {
           </div>
         </section>        
 
+        <div className="mt-10 space-y-8">
+          <SeoCaseLinks
+            title="开发者服务高意图案例"
+            description="围绕 App Store、Google Play、开发者账号和包体合规，优先查看最接近当前问题的案例。"
+            slugs={serviceCaseSlugs.developer}
+            topicSlugs={["app-store", "google-play", "aso"]}
+            theme="dark"
+          />
+          <SeoFaqSection
+            items={serviceFaqs.developer}
+            title="开发者服务常见问题"
+            description="如果已经出现拒审、下架、账号关联或更新卡点，建议先保留邮件、后台截图、包体信息和账号操作记录。"
+            theme="dark"
+          />
+        </div>
+
       </main>
 
       <DeveloperFloatWidget />
@@ -271,4 +290,3 @@ export default function DeveloperPage() {
     </div>
   );
 }
-

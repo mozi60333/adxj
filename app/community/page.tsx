@@ -3,6 +3,9 @@ import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { Contact } from "@/components/contact";
 import { LiveTicker } from "@/components/live-ticker";
+import { SeoCaseLinks } from "@/components/seo-case-links";
+import { SeoFaqSection } from "@/components/seo-faq-section";
+import { serviceCaseSlugs, serviceFaqs } from "@/lib/seo-content";
 import { 
   Globe2, 
   MessageCircle, 
@@ -240,6 +243,20 @@ export default function CommunityPage() {
           </div>
         </section>
 
+        <div className="space-y-8">
+          <SeoCaseLinks
+            title="Telegram 私域与社群转化案例"
+            description="从 Bot 筛选、客服响应、频道广告和人工咨询承接进入，优化用户从进群到咨询的完整路径。"
+            slugs={serviceCaseSlugs.community}
+            topicSlugs={["telegram", "cpa-network", "ai-apps"]}
+          />
+          <SeoFaqSection
+            items={serviceFaqs.community}
+            title="行业社群常见问题"
+            description="咨询社群合作时，建议说明业务品类、目标地区、希望对接的资源类型和当前转化卡点。"
+          />
+        </div>
+
       </main>
 
       <Contact />
@@ -247,4 +264,3 @@ export default function CommunityPage() {
     </div>
   );
 }
-

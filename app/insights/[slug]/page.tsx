@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   Clock3,
   Mail,
@@ -17,6 +18,7 @@ import { Nav } from "@/components/nav";
 import { JsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 import { articles, getArticleBySlug } from "../articles";
+import { getTopicForKeyword, inferArticleTopicSlug, insightTopicMap, topicHref } from "../topics";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -112,7 +114,7 @@ export default async function InsightArticlePage({ params }: PageProps) {
     description: article.excerpt,
     image: absoluteUrl(article.coverImage),
     datePublished: article.publishedAt,
-    dateModified: article.publishedAt,
+    dateModified: article.updatedAt ?? article.publishedAt,
     author: {
       "@type": "Organization",
       name: "ADXJ 蓝鲸出海",
@@ -136,6 +138,15 @@ export default async function InsightArticlePage({ params }: PageProps) {
     { name: "出海资讯", path: "/insights" },
     { name: article.title, path: `/insights/${article.slug}` },
   ]);
+  const primaryTopicSlug = article.topic ?? inferArticleTopicSlug(article);
+  const primaryTopic = insightTopicMap[primaryTopicSlug];
+  const relatedArticles = (
+    article.relatedSlugs?.length
+      ? article.relatedSlugs
+          .map((relatedSlug) => articles.find((item) => item.slug === relatedSlug))
+          .filter(Boolean)
+      : articles.filter((item) => item.slug !== article.slug && (item.topic ?? inferArticleTopicSlug(item)) === primaryTopicSlug)
+  ).slice(0, 3);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-200 selection:text-blue-950">
@@ -204,6 +215,59 @@ export default async function InsightArticlePage({ params }: PageProps) {
                 </section>
               ))}
             </div>
+
+            <div className="mt-10 rounded-[2rem] border border-blue-100 bg-blue-50 p-6 md:p-8">
+              <div className="mb-3 text-xs font-black uppercase tracking-widest text-blue-700">Next Step</div>
+              <h2 className="text-2xl font-black text-slate-950 font-[family-name:var(--font-display)]">
+                继续查看 {primaryTopic.name} 服务与相关案例
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                如果你遇到的问题和本文相近，可以先看专题里的更多案例，也可以直接把当前情况发给 ADXJ 做初步诊断。
+              </p>
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Link
+                  href={primaryTopic.serviceHref}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-xs font-bold text-white transition-all hover:bg-blue-700"
+                >
+                  相关服务 <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href={topicHref(primaryTopic.slug)}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-white px-5 py-3 text-xs font-bold text-blue-700 transition-all hover:bg-blue-50"
+                >
+                  {primaryTopic.name} 专题
+                </Link>
+                <a
+                  href={site.telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-white px-5 py-3 text-xs font-bold text-blue-700 transition-all hover:bg-blue-50"
+                >
+                  Telegram @M7HHHH
+                </a>
+              </div>
+            </div>
+
+            {relatedArticles.length > 0 && (
+              <div className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 md:p-8">
+                <div className="mb-5 text-xs font-black uppercase tracking-widest text-slate-400">Related Articles</div>
+                <div className="grid grid-cols-1 gap-4">
+                  {relatedArticles.map((relatedArticle) => relatedArticle && (
+                    <Link
+                      key={relatedArticle.slug}
+                      href={`/insights/${relatedArticle.slug}`}
+                      className="group rounded-2xl border border-slate-100 bg-slate-50 p-5 transition-all hover:border-blue-200 hover:bg-blue-50"
+                    >
+                      <div className="mb-2 text-[10px] font-bold text-blue-700">{relatedArticle.category}</div>
+                      <h3 className="text-base font-black leading-snug text-slate-950 group-hover:text-blue-700">
+                        {relatedArticle.title}
+                      </h3>
+                      <p className="mt-2 line-clamp-2 text-xs leading-6 text-slate-600">{relatedArticle.excerpt}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
@@ -213,11 +277,14 @@ export default async function InsightArticlePage({ params }: PageProps) {
                 Keywords
               </div>
               <div className="flex flex-wrap gap-2">
-                {article.keywords.map((keyword) => (
-                  <span key={keyword} className="rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700">
+                {article.keywords.map((keyword) => {
+                  const keywordTopicSlug = getTopicForKeyword(keyword, primaryTopicSlug);
+                  return (
+                  <Link key={keyword} href={topicHref(keywordTopicSlug)} className="rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-bold text-blue-700 transition-colors hover:bg-blue-100 hover:text-blue-900">
                     {keyword}
-                  </span>
-                ))}
+                  </Link>
+                  );
+                })}
               </div>
             </div>
           </aside>

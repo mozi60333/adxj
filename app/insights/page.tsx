@@ -10,6 +10,7 @@ import { JsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 import { articles, insightCategories } from "./articles";
 import { InsightsList } from "./insights-list";
+import { insightTopics, topicHref } from "./topics";
 
 const description =
   `ADXJ 出海资讯沉淀 ${articles.length} 篇开发者出海、海外投放增长与企业出海洞察，覆盖 ASO 优化、App Store、Google Play、Meta Ads、TikTok Ads、Telegram Ads、AI 应用、SLOTS、现金贷、海外网盟 CPA 与订阅增长。`;
@@ -69,6 +70,11 @@ const collectionJsonLd = {
   url: canonicalUrl(path),
   description,
   about: insightCategories,
+  hasPart: insightTopics.map((topic) => ({
+    "@type": "CollectionPage",
+    name: `${topic.name} 专题`,
+    url: canonicalUrl(topicHref(topic.slug)),
+  })),
   mainEntity: articles.map((article) => ({
     "@type": "Article",
     headline: article.title,
@@ -155,6 +161,36 @@ export default function InsightsPage() {
               <p className="mt-3 text-sm leading-relaxed text-slate-600">{featured.excerpt}</p>
             </div>
           </Link>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-6 py-14 md:px-10">
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-3 text-xs font-black uppercase tracking-widest text-blue-700">Insight Topics</div>
+            <h2 className="text-3xl font-black text-slate-950 md:text-4xl font-[family-name:var(--font-display)]">
+              按高意图问题进入专题
+            </h2>
+          </div>
+          <p className="max-w-xl text-sm leading-relaxed text-slate-600">
+            从上架、投放、社群、AI 应用、SLOTS、现金贷、CPA 和 ASO 进入，快速找到相近案例和咨询入口。
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {insightTopics.map((topic) => (
+            <Link
+              key={topic.slug}
+              href={topicHref(topic.slug)}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50"
+            >
+              <div className="mb-3 text-[10px] font-black uppercase tracking-widest text-blue-700">{topic.name}</div>
+              <h3 className="text-base font-black leading-snug text-slate-950 group-hover:text-blue-700">{topic.heroTitle}</h3>
+              <p className="mt-3 line-clamp-3 text-xs leading-6 text-slate-600">{topic.description}</p>
+              <span className="mt-4 inline-flex items-center gap-1 text-xs font-black text-blue-700">
+                查看专题 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 

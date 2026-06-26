@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { JsonLd, breadcrumbJsonLd, serviceJsonLd } from "@/lib/seo";
-import { canonicalUrl, site } from "@/lib/site";
+import { JsonLd, breadcrumbJsonLd, faqPageJsonLd, serviceJsonLd } from "@/lib/seo";
+import { serviceFaqs } from "@/lib/seo-content";
+import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 
 const description =
   "ADXJ 为出海开发者提供 iOS 开发者账号、Google Play 开发者账号、应用上架、审核被拒处理、包体合规、账号风控和技术支持。";
@@ -9,7 +10,7 @@ const path = "/developer";
 export const metadata: Metadata = {
   title: "开发者服务 | iOS 与 Google Play 出海上架",
   description,
-  keywords: ["开发者服务", "iOS 上架", "Google Play 上架", "开发者账号", "审核被拒", "账号风控"],
+  keywords: ["开发者服务", "iOS 开发者账号", "Google Play 开发者账号", "App 上架", "审核被拒", "账号风控"],
   alternates: { canonical: canonicalUrl(path) },
   openGraph: {
     title: "开发者服务 | iOS 与 Google Play 出海上架",
@@ -18,6 +19,20 @@ export const metadata: Metadata = {
     siteName: site.name,
     type: "website",
     locale: site.locale,
+    images: [
+      {
+        url: absoluteUrl(site.defaultOgImage),
+        width: 1200,
+        height: 630,
+        alt: "ADXJ 开发者服务 iOS 与 Google Play 出海上架",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "开发者服务 | iOS 与 Google Play 出海上架",
+    description,
+    images: [absoluteUrl(site.defaultOgImage)],
   },
 };
 
@@ -32,6 +47,7 @@ const structuredData = [
     path,
     serviceType: "应用上架与开发者账号服务",
   }),
+  faqPageJsonLd(serviceFaqs.developer),
 ];
 
 export default function DeveloperLayout({ children }: { children: React.ReactNode }) {
