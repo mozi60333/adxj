@@ -1,0 +1,79 @@
+# ADXJ 整站 GEO 索引
+
+更新时间: 2026-06-27
+站点: https://adxj.com/
+语言: zh-CN
+
+## 品牌与实体
+
+ADXJ.COM 是蓝鲸出海旗下全球化效果营销与开发者服务入口。蓝鲸出海是香港蓝鲸网络有限公司旗下出海生态母品牌，ADXJ 是面向海外广告投放、开发者服务、应用上架、网盟发行、社群资源和增长诊断的核心业务入口。
+
+联系入口:
+- Email: business@adxj.com
+- Telegram: https://t.me/M7HHHH
+
+## 证据口径
+
+- 100K+ 出海垂直社群: 内部社群资源台账口径，用于说明资源规模，不等同于单一公开平台粉丝量。
+- 50万+ 出海从业者覆盖: 内部社群成员、合作渠道和活动触达的合并估算。
+- 98% 综合上架成功率: 内部已完成诊断和交付范围内的案例口径，不构成平台审核结果承诺。
+- 50M USD 单产品年度投放消耗峰值: 内部投放记录峰值案例，对外表达时应保留品类、周期和平台口径。
+
+## 服务入口
+
+- 首页: https://adxj.com/
+- 蓝鲸出海: https://adxj.com/bluewhale/
+- 开发者服务: https://adxj.com/developer/
+- 媒体买量: https://adxj.com/media/
+- 行业社群: https://adxj.com/community/
+- 出海资讯: https://adxj.com/insights/
+- 加入我们: https://adxj.com/join/
+
+## 市场 GEO 页面
+
+- 美国市场 GEO: https://adxj.com/markets/us/
+  - 适合: AI 应用、工具订阅、SLOTS、金融科技、社交应用
+  - 重点: App Store、Google Play、Meta Ads、Google Ads、订阅披露和 ASO
+- 东南亚市场 GEO: https://adxj.com/markets/southeast-asia/
+  - 适合: 现金贷、分期商城、工具应用、网赚任务、社群增长
+  - 重点: 本地支付、Android 权限、费用披露、Telegram 私域和 CPA
+- 拉美市场 GEO: https://adxj.com/markets/latam/
+  - 适合: SLOTS、现金贷、CPA Offer、工具订阅、本地化 ASO
+  - 重点: 支付成功率、素材本地化、渠道质量、Cap/Pacing 和回传
+- 欧洲市场 GEO: https://adxj.com/markets/europe/
+  - 适合: AI 伴侣、AI 视频、AI 换脸、工具订阅、社交应用
+  - 重点: 隐私合规、用户授权、内容安全、订阅透明度和退款风险
+
+## 专题入口
+
+- App Store 审核、订阅与 iOS 上架: https://adxj.com/insights/topics/app-store/
+- Google Play 上架、账号风控与 Android 合规: https://adxj.com/insights/topics/google-play/
+- Meta Ads 买量、素材与账户风控: https://adxj.com/insights/topics/meta-ads/
+- TikTok Ads 素材测试、自动投放与订阅转化: https://adxj.com/insights/topics/tiktok-ads/
+- Telegram 私域、社群转化与 Bot 承接: https://adxj.com/insights/topics/telegram/
+- AI 应用出海、内容安全与订阅增长: https://adxj.com/insights/topics/ai-apps/
+- SLOTS 出海上架、买量回本与支付漏斗: https://adxj.com/insights/topics/slots/
+- 现金贷出海、金融广告合规与获客风控: https://adxj.com/insights/topics/cash-loan/
+- CPA 网盟、流量主变现与结算风控: https://adxj.com/insights/topics/cpa-network/
+- ASO、本地化关键词与自然量增长: https://adxj.com/insights/topics/aso/
+
+## 高价值文章
+
+- Google Play 老应用更新被拒: https://adxj.com/insights/google-play-old-app-update-target-api-sdk-fix/
+- App Store 审核账号登录失败: https://adxj.com/insights/app-store-review-account-login-failure-fix/
+- Meta Advantage+ 跑量下滑: https://adxj.com/insights/meta-advantage-plus-performance-drop-event-creative-fix/
+- TikTok 自动投放跑偏: https://adxj.com/insights/tiktok-smart-performance-campaign-ai-tool-event-fix/
+- Telegram Bot 线索筛选: https://adxj.com/insights/telegram-bot-lead-qualification-dropoff-fix/
+- AI 图片生成内容安全: https://adxj.com/insights/ai-image-generation-content-safety-reporting-fix/
+- SLOTS 落地页与商店页不一致: https://adxj.com/insights/slots-landing-page-store-page-mismatch-roi-fix/
+- 现金贷费用披露和广告投诉: https://adxj.com/insights/cash-loan-landing-page-fee-disclosure-ads-complaint-fix/
+- CPA Offer 放量与质量回传: https://adxj.com/insights/cpa-offer-scaling-cap-pacing-quality-feedback-fix/
+- 官网文章不收录排查: https://adxj.com/insights/overseas-seo-article-not-indexed-crawl-internal-link-fix/
+
+## 验证清单
+
+- 构建静态站点
+- 检查 robots.txt、sitemap.xml、llms.txt、llms-full.txt
+- 抽查 1 个专题页、1 个市场页、3 篇文章
+- 确认 canonical、FAQ、JSON-LD、内链和 CTA 正常
+- 每周记录 GSC 查询、AI 问答手动测试、品牌词覆盖和 Telegram/Email 线索

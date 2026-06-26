@@ -98,7 +98,7 @@ export default async function InsightTopicPage({ params }: PageProps) {
       url: canonicalUrl(`/insights/${article.slug}`),
       image: absoluteUrl(article.coverImage),
       datePublished: article.publishedAt,
-      dateModified: article.updatedAt ?? article.publishedAt,
+      dateModified: article.lastReviewedAt ?? article.updatedAt ?? article.publishedAt,
     })),
   };
   const breadcrumbJsonLdData = breadcrumbJsonLd([

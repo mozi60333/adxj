@@ -81,6 +81,7 @@ const collectionJsonLd = {
     url: canonicalUrl(`/insights/${article.slug}`),
     image: absoluteUrl(article.coverImage),
     datePublished: article.publishedAt,
+    dateModified: article.lastReviewedAt ?? article.updatedAt ?? article.publishedAt,
   })),
 };
 

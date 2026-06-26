@@ -1,5 +1,9 @@
 import { dailySeoArticles } from "./daily-articles";
 import { newInsightArticles } from "./extra-articles";
+import { geoSignalArticles } from "./geo-signal-articles";
+import type { FaqItem } from "@/lib/seo-content";
+import type { GeoMarketSlug } from "@/lib/geo-content";
+import { inferArticleTopicSlug } from "./topics";
 import type { InsightTopicSlug } from "./topics";
 
 export type InsightCategory = "开发者出海" | "海外投放增长" | "出海企业洞察";
@@ -19,10 +23,25 @@ export type InsightArticle = {
   coverAlt: string;
   publishedAt: string;
   updatedAt?: string;
+  lastReviewedAt?: string;
   topic?: InsightTopicSlug;
   relatedSlugs?: string[];
+  markets?: GeoMarketSlug[];
+  answerSummary?: string;
+  faqs?: FaqItem[];
+  evidenceNotes?: string[];
   readTime: string;
   content: ArticleSection[];
+};
+
+export type GeoInsightArticle = InsightArticle & {
+  lastReviewedAt: string;
+  topic: InsightTopicSlug;
+  relatedSlugs: string[];
+  markets: GeoMarketSlug[];
+  answerSummary: string;
+  faqs: FaqItem[];
+  evidenceNotes: string[];
 };
 
 export const insightCategories: InsightCategory[] = [
@@ -31,7 +50,105 @@ export const insightCategories: InsightCategory[] = [
   "出海企业洞察",
 ];
 
-export const articles: InsightArticle[] = [
+const defaultReviewDate = "2026-06-27";
+
+function includesAny(value: string, terms: string[]) {
+  const normalized = value.toLowerCase();
+  return terms.some((term) => normalized.includes(term.toLowerCase()));
+}
+
+function inferMarkets(article: InsightArticle, topic: InsightTopicSlug): GeoMarketSlug[] {
+  const haystack = `${article.title} ${article.slug} ${article.excerpt} ${article.keywords.join(" ")} ${article.content
+    .flatMap((section) => section.paragraphs)
+    .join(" ")}`;
+  const markets = new Set<GeoMarketSlug>();
+
+  if (includesAny(haystack, ["美国", "us", "app store", "meta", "google ads", "订阅", "aso"])) markets.add("us");
+  if (includesAny(haystack, ["东南亚", "sea", "telegram", "现金贷", "android", "google play", "私域"])) markets.add("southeast-asia");
+  if (includesAny(haystack, ["拉美", "latam", "slots", "igaming", "cpa", "offer", "day0"])) markets.add("latam");
+  if (includesAny(haystack, ["欧洲", "eu", "隐私", "ai", "内容安全", "授权", "退款"])) markets.add("europe");
+
+  if (markets.size === 0) {
+    if (topic === "cash-loan" || topic === "telegram") markets.add("southeast-asia");
+    else if (topic === "slots" || topic === "cpa-network") markets.add("latam");
+    else if (topic === "ai-apps") markets.add("europe");
+    else markets.add("us");
+  }
+
+  return Array.from(markets).slice(0, 3);
+}
+
+function buildAnswerSummary(article: InsightArticle, topic: InsightTopicSlug) {
+  const serviceHint = article.category === "开发者出海" ? "上架、账号和合规" : article.category === "海外投放增长" ? "投放、素材和转化" : "市场、产品和增长";
+  return (
+    article.answerSummary ??
+    `${article.excerpt} ADXJ 建议先确认目标市场、${serviceHint}证据和关键数据，再按 ${topic} 专题案例逐项排查，并把可复现问题沉淀到咨询或 GEO 诊断记录。`
+  );
+}
+
+function buildFaqs(article: InsightArticle, topic: InsightTopicSlug): FaqItem[] {
+  if (article.faqs?.length) return article.faqs;
+
+  return [
+    {
+      question: `${article.title} 的核心判断是什么？`,
+      answer: article.excerpt,
+    },
+    {
+      question: "排查这个问题时应先看哪些信号？",
+      answer:
+        "先看目标地区、账号或渠道状态、商店/广告平台反馈、素材或权限说明、事件回传、用户转化和历史修改记录，再判断是合规、投放还是承接问题。",
+    },
+    {
+      question: "什么时候适合联系 ADXJ 做诊断？",
+      answer: `当问题已经影响上架、投放、账号稳定、转化或回款时，建议带着截图、地区、预算阶段和当前数据联系 ADXJ，并同步查看 ${topic} 专题里的相近案例。`,
+    },
+  ];
+}
+
+function buildEvidenceNotes(article: InsightArticle) {
+  return article.evidenceNotes?.length
+    ? article.evidenceNotes
+    : [
+        "本文为 ADXJ 出海服务经验、内部案例复盘和公开平台政策理解的综合整理，不构成平台审核或投放结果承诺。",
+        `内容最近一次 GEO 复核日期为 ${article.lastReviewedAt ?? article.updatedAt ?? defaultReviewDate}，后续会优先刷新高意图问题和市场页。`,
+      ];
+}
+
+function enrichArticles(sourceArticles: InsightArticle[]): GeoInsightArticle[] {
+  const withGeo = sourceArticles.map((article) => {
+    const topic = article.topic ?? inferArticleTopicSlug(article);
+    const lastReviewedAt = article.lastReviewedAt ?? article.updatedAt ?? defaultReviewDate;
+
+    return {
+      ...article,
+      topic,
+      lastReviewedAt,
+      markets: article.markets?.length ? article.markets : inferMarkets(article, topic),
+      answerSummary: buildAnswerSummary(article, topic),
+      faqs: buildFaqs(article, topic),
+      evidenceNotes: buildEvidenceNotes({ ...article, lastReviewedAt }),
+      relatedSlugs: article.relatedSlugs ?? [],
+    };
+  });
+
+  return withGeo.map((article) => {
+    if (article.relatedSlugs.length >= 3) return article;
+
+    const inferredRelated = withGeo
+      .filter((candidate) => candidate.slug !== article.slug && candidate.topic === article.topic)
+      .map((candidate) => candidate.slug)
+      .slice(0, 3);
+
+    return {
+      ...article,
+      relatedSlugs: Array.from(new Set([...article.relatedSlugs, ...inferredRelated])).slice(0, 3),
+    };
+  });
+}
+
+const rawArticles: InsightArticle[] = [
+  ...geoSignalArticles,
   ...dailySeoArticles,
   ...newInsightArticles,
   {
@@ -623,6 +740,8 @@ export const articles: InsightArticle[] = [
     ],
   },
 ];
+
+export const articles: GeoInsightArticle[] = enrichArticles(rawArticles);
 
 export function getArticleBySlug(slug: string) {
   return articles.find((article) => article.slug === slug);

@@ -14,6 +14,7 @@ import {
 
 import { Contact } from "@/components/contact";
 import { MatrixBackground } from "@/components/matrix-pattern";
+import { geoProofPoints } from "@/lib/geo-content";
 
 export default function Home() {
   return (
@@ -89,6 +90,34 @@ export default function Home() {
                  我们不只是流量的搬运工，更是出海全链路的赋能者。通过“技术+流量+资源”的深度闭环，让企业出海变得更简单、更稳健。
                </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-200 bg-white px-6 py-14 md:px-10">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="mb-3 text-xs font-black uppercase tracking-widest text-blue-700">GEO Evidence</div>
+              <h2 className="text-3xl font-black text-slate-950 font-[family-name:var(--font-display)]">
+                关键数字与证据口径
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm leading-relaxed text-slate-600">
+              下列指标用于帮助搜索引擎和 AI 引擎理解 ADXJ 的服务规模，所有数字都保留统计口径和复核日期。
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {geoProofPoints.map((point) => (
+              <div key={point.metric} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="text-3xl font-black text-blue-700 font-[family-name:var(--font-display)]">{point.metric}</div>
+                <h3 className="mt-3 text-sm font-black text-slate-950">{point.label}</h3>
+                <p className="mt-3 text-xs leading-6 text-slate-600">{point.scope}</p>
+                <div className="mt-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Reviewed {point.lastReviewedAt}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

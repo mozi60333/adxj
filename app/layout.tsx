@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import Script from 'next/script';
 import { JsonLd } from '@/lib/seo';
 import { absoluteUrl, canonicalUrl, site } from '@/lib/site';
 import './globals.css'; // Global styles
@@ -7,6 +8,7 @@ import './globals.css'; // Global styles
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-display' });
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+const googleTagId = 'G-3P1SEPYD92';
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -106,6 +108,15 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="zh-CN">
       <body className={`${inter.variable} ${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${googleTagId}`} strategy="afterInteractive" />
+        <Script id="google-tag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${googleTagId}');
+          `}
+        </Script>
         <JsonLd data={organizationJsonLd} />
         <JsonLd data={websiteJsonLd} />
         {children}

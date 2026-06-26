@@ -15,7 +15,8 @@ import {
 import { Footer } from "@/components/footer";
 import { MatrixBackground } from "@/components/matrix-pattern";
 import { Nav } from "@/components/nav";
-import { JsonLd, breadcrumbJsonLd } from "@/lib/seo";
+import { JsonLd, breadcrumbJsonLd, faqPageJsonLd } from "@/lib/seo";
+import { geoMarkets } from "@/lib/geo-content";
 import { absoluteUrl, canonicalUrl, site } from "@/lib/site";
 import { articles, getArticleBySlug } from "../articles";
 import { getTopicForKeyword, inferArticleTopicSlug, insightTopicMap, topicHref } from "../topics";
@@ -107,6 +108,11 @@ export default async function InsightArticlePage({ params }: PageProps) {
   }
 
   const articleUrl = canonicalUrl(`/insights/${article.slug}`);
+  const primaryTopicSlug = article.topic ?? inferArticleTopicSlug(article);
+  const primaryTopic = insightTopicMap[primaryTopicSlug];
+  const articleMarkets = article.markets
+    .map((marketSlug) => geoMarkets.find((market) => market.slug === marketSlug))
+    .filter(Boolean);
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -114,7 +120,7 @@ export default async function InsightArticlePage({ params }: PageProps) {
     description: article.excerpt,
     image: absoluteUrl(article.coverImage),
     datePublished: article.publishedAt,
-    dateModified: article.updatedAt ?? article.publishedAt,
+    dateModified: article.lastReviewedAt ?? article.updatedAt ?? article.publishedAt,
     author: {
       "@type": "Organization",
       name: "ADXJ 蓝鲸出海",
@@ -131,6 +137,8 @@ export default async function InsightArticlePage({ params }: PageProps) {
     },
     mainEntityOfPage: articleUrl,
     keywords: article.keywords.join(", "),
+    articleSection: primaryTopic.name,
+    abstract: article.answerSummary,
   };
 
   const breadcrumbJsonLdData = breadcrumbJsonLd([
@@ -138,8 +146,6 @@ export default async function InsightArticlePage({ params }: PageProps) {
     { name: "出海资讯", path: "/insights" },
     { name: article.title, path: `/insights/${article.slug}` },
   ]);
-  const primaryTopicSlug = article.topic ?? inferArticleTopicSlug(article);
-  const primaryTopic = insightTopicMap[primaryTopicSlug];
   const relatedArticles = (
     article.relatedSlugs?.length
       ? article.relatedSlugs
@@ -151,7 +157,7 @@ export default async function InsightArticlePage({ params }: PageProps) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 selection:bg-blue-200 selection:text-blue-950">
       <Nav />
-      <JsonLd data={[articleJsonLd, breadcrumbJsonLdData]} />
+      <JsonLd data={[articleJsonLd, breadcrumbJsonLdData, faqPageJsonLd(article.faqs)]} />
 
       <article>
         <header className="relative overflow-hidden border-b border-slate-200 bg-white px-6 py-16 md:px-10 md:py-20">
@@ -199,6 +205,27 @@ export default async function InsightArticlePage({ params }: PageProps) {
 
         <div className="mx-auto grid max-w-7xl gap-10 px-6 pb-16 md:px-10 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm md:p-10">
+            <section className="mb-10 rounded-[2rem] border border-blue-100 bg-blue-50 p-6 md:p-8">
+              <div className="mb-3 text-xs font-black uppercase tracking-widest text-blue-700">GEO Direct Answer</div>
+              <h2 className="text-2xl font-black text-slate-950 font-[family-name:var(--font-display)]">
+                直接答案
+              </h2>
+              <p className="mt-4 text-[15px] leading-8 text-slate-700">{article.answerSummary}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link href={topicHref(primaryTopic.slug)} className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-blue-700">
+                  {primaryTopic.name} 专题
+                </Link>
+                {articleMarkets.map((market) => market && (
+                  <Link key={market.slug} href={`/markets/${market.slug}`} className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700">
+                    {market.name}
+                  </Link>
+                ))}
+                <span className="rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-slate-500">
+                  GEO 复核 {article.lastReviewedAt}
+                </span>
+              </div>
+            </section>
+
             <div className="space-y-10">
               {article.content.map((section) => (
                 <section key={section.heading}>
@@ -268,6 +295,19 @@ export default async function InsightArticlePage({ params }: PageProps) {
                 </div>
               </div>
             )}
+
+            <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-6 md:p-8">
+              <div className="mb-5 text-xs font-black uppercase tracking-widest text-blue-700">Article FAQ</div>
+              <div className="grid grid-cols-1 gap-4">
+                {article.faqs.map((item) => (
+                  <div key={item.question} className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
+                    <h3 className="text-sm font-black leading-relaxed text-slate-950">{item.question}</h3>
+                    <p className="mt-3 text-xs leading-6 text-slate-600">{item.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
           </div>
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
