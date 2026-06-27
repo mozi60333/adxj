@@ -282,7 +282,7 @@ async function buildSnapshot(env, meta) {
   const urls = prioritizeUrls(publicIndexes.urls);
 
   const [gscResult, cloudflareResult] = await Promise.allSettled([
-    fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange),
+    fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange, publicIndexes.urlMeta),
     fetchCloudflareCrawlData(env, siteOrigin, dateRange),
   ]);
 
@@ -325,19 +325,28 @@ function resultValue(result, source) {
 async function fetchPublicIndexes(env, siteOrigin) {
   const errors = [];
   const urls = new Set();
+  const urlMeta = {};
   const status = {
     sitemap: "unknown",
     llmsFull: "unknown",
   };
 
   for (const [path, parser, key] of [
-    ["/sitemap.xml", parseSitemapUrls, "sitemap"],
+    ["/sitemap.xml", parseSitemapEntries, "sitemap"],
     ["/llms-full.txt", parseTextUrls, "llmsFull"],
   ]) {
     try {
       const text = await fetchPublicText(env, siteOrigin, path);
-      parser(text).forEach((url) => {
-        if (url.startsWith(siteOrigin)) urls.add(normalizeUrl(url));
+      parser(text).forEach((entry) => {
+        const url = typeof entry === "string" ? entry : entry.url;
+        if (!url?.startsWith(siteOrigin)) return;
+
+        const normalizedUrl = normalizeUrl(url);
+        urls.add(normalizedUrl);
+        urlMeta[normalizedUrl] ??= {};
+        urlMeta[normalizedUrl].sources ??= [];
+        urlMeta[normalizedUrl].sources.push(key);
+        if (entry.lastModified) urlMeta[normalizedUrl].lastModified = entry.lastModified;
       });
       status[key] = "ok";
     } catch (error) {
@@ -350,6 +359,7 @@ async function fetchPublicIndexes(env, siteOrigin) {
     status,
     errors,
     urls: [...urls],
+    urlMeta,
   };
 }
 
@@ -365,7 +375,18 @@ async function fetchPublicText(env, siteOrigin, path) {
 }
 
 function parseSitemapUrls(text) {
-  return [...text.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  return parseSitemapEntries(text).map((entry) => entry.url);
+}
+
+function parseSitemapEntries(text) {
+  return [...text.matchAll(/<url>([\s\S]*?)<\/url>/g)]
+    .map((match) => {
+      const block = match[1] || "";
+      const url = block.match(/<loc>([^<]+)<\/loc>/)?.[1] || "";
+      const lastModified = block.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1] || null;
+      return { url, lastModified };
+    })
+    .filter((entry) => entry.url);
 }
 
 function parseTextUrls(text) {
@@ -387,7 +408,43 @@ function prioritizeUrls(urls) {
     });
 }
 
-async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
+function selectInspectionUrls(urls, limit, siteOrigin, urlMeta = {}) {
+  if (!Number.isFinite(limit) || limit <= 0) return [];
+
+  const homepage = normalizeUrl(`${siteOrigin}/`);
+  const order = {
+    index: 0,
+    article: 1,
+    topic: 2,
+    market: 3,
+    service: 4,
+  };
+
+  return [...new Set(urls.map(normalizeUrl))]
+    .filter((url) => {
+      const type = classifyUrl(url).pageType;
+      return ["article", "topic", "market", "service", "index"].includes(type);
+    })
+    .sort((a, b) => {
+      if (a === homepage) return -1;
+      if (b === homepage) return 1;
+
+      const aType = classifyUrl(a).pageType;
+      const bType = classifyUrl(b).pageType;
+      const aOrder = order[aType] ?? 9;
+      const bOrder = order[bType] ?? 9;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+
+      const aModified = Date.parse(urlMeta[a]?.lastModified || "") || 0;
+      const bModified = Date.parse(urlMeta[b]?.lastModified || "") || 0;
+      if (aModified !== bModified) return bModified - aModified;
+
+      return a.localeCompare(b);
+    })
+    .slice(0, limit);
+}
+
+async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange, urlMeta = {}) {
   const googleAccessToken = await getGoogleAccessTokenFromEnv(env);
   const gscSiteUrl = env.GSC_SITE_URL;
 
@@ -416,7 +473,7 @@ async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
 
   const pages = aggregateSearchAnalyticsRows(searchAnalytics.rows || []);
   const inspectionLimit = Number(env.GSC_INSPECTION_LIMIT || 25);
-  const inspectionUrls = urls.filter((url) => classifyUrl(url).pageType === "article").slice(0, inspectionLimit);
+  const inspectionUrls = selectInspectionUrls(urls, inspectionLimit, siteOrigin, urlMeta);
   const inspections = {};
 
   for (const url of inspectionUrls) {
