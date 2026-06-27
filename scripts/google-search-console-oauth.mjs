@@ -5,13 +5,20 @@ import { URL } from "node:url";
 const scope = "https://www.googleapis.com/auth/webmasters.readonly";
 const defaultRedirectUri = "http://127.0.0.1:8765/oauth/callback";
 const args = process.argv.slice(2);
-const clientPath = args[args.indexOf("--client") + 1] || process.env.GOOGLE_OAUTH_CLIENT_JSON_PATH;
-const codeArg = args[args.indexOf("--code") + 1];
-const redirectUri = args[args.indexOf("--redirect-uri") + 1] || defaultRedirectUri;
+const helpRequested = args.includes("--help") || args.includes("-h");
+const clientPath = getArg("--client") || process.env.GOOGLE_OAUTH_CLIENT_JSON_PATH;
+const codeArg = getArg("--code");
+const redirectUri = getArg("--redirect-uri") || defaultRedirectUri;
+const writeEnvPath = getArg("--write-env");
+const printUrlOnly = args.includes("--print-url");
 
-if (!clientPath) {
+if (helpRequested || !clientPath) {
   console.error("Usage: node scripts/google-search-console-oauth.mjs --client /path/to/client_secret.json [--code CODE]");
-  process.exit(1);
+  console.error("Options:");
+  console.error("  --redirect-uri URL     Defaults to http://127.0.0.1:8765/oauth/callback");
+  console.error("  --print-url            Print the Google authorization URL and exit");
+  console.error("  --write-env PATH       Write GOOGLE_OAUTH_* values to an untracked env file after authorization");
+  process.exit(helpRequested ? 0 : 1);
 }
 
 const config = JSON.parse(fs.readFileSync(clientPath, "utf8"));
@@ -20,6 +27,12 @@ const client = config.web || config.installed;
 if (!client?.client_id || !client?.client_secret) {
   console.error("The client JSON must contain a web or installed OAuth client.");
   process.exit(1);
+}
+
+if (!client.redirect_uris?.includes(redirectUri)) {
+  console.error(`Warning: OAuth client redirect_uris does not include ${redirectUri}`);
+  console.error("Add it in Google Cloud Console before opening the authorization URL, or pass an allowed --redirect-uri.");
+  console.error("");
 }
 
 if (codeArg) {
@@ -36,6 +49,7 @@ if (codeArg) {
 
   console.log("Open this URL in the Google account that owns Search Console:");
   console.log(authUrl.toString());
+  if (printUrlOnly) process.exit(0);
   console.log("");
   console.log(`Waiting for callback on ${redirectUri} ...`);
 
@@ -95,6 +109,22 @@ function printTokenInstructions(token) {
     return;
   }
 
+  if (writeEnvPath) {
+    const clientJsonB64 = Buffer.from(JSON.stringify(config)).toString("base64");
+    fs.appendFileSync(
+      writeEnvPath,
+      [
+        "",
+        "# Google Search Console OAuth for GEO/SEO automation",
+        `GOOGLE_OAUTH_CLIENT_JSON_B64=${clientJsonB64}`,
+        `GOOGLE_OAUTH_REFRESH_TOKEN=${token.refresh_token}`,
+        "",
+      ].join("\n"),
+    );
+    console.log("");
+    console.log(`OAuth values were written to ${writeEnvPath}. Do not commit this file.`);
+  }
+
   console.log("");
   console.log("Refresh token received. Do not paste it into chat.");
   console.log("Set it with:");
@@ -102,4 +132,12 @@ function printTokenInstructions(token) {
   console.log("");
   console.log("Also base64 the OAuth client JSON and set:");
   console.log("wrangler secret put GOOGLE_OAUTH_CLIENT_JSON_B64");
+}
+
+function getArg(name) {
+  const index = args.indexOf(name);
+  if (index === -1) return null;
+  const value = args[index + 1];
+  if (!value || value.startsWith("--")) return null;
+  return value;
 }
