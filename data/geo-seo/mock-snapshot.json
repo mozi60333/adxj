@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-27T01:30:00.000Z",
+  "snapshotDate": "2026-06-27",
+  "site": "https://adxj.com",
+  "dateRange": {
+    "gscStartDate": "2026-06-19",
+    "gscEndDate": "2026-06-25",
+    "cloudflareStartTime": "2026-06-20T01:30:00.000Z",
+    "cloudflareEndTime": "2026-06-27T01:30:00.000Z"
+  },
+  "sourceStatus": {
+    "publicIndexes": {
+      "sitemap": "ok",
+      "llmsFull": "ok"
+    },
+    "googleSearchConsole": "mock",
+    "cloudflare": "mock"
+  },
+  "summary": {
+    "totalUrls": 5,
+    "articles": 3,
+    "topics": 1,
+    "markets": 1,
+    "googlebotCrawled": 3,
+    "aiBotCrawled": 2,
+    "indexedOrInspected": 2,
+    "actionCounts": {
+      "refresh-answer-faq-and-internal-links": 1,
+      "rewrite-title-excerpt-and-direct-answer": 1,
+      "strengthen-llms-topic-and-related-links": 1,
+      "monitor": 2
+    }
+  },
+  "items": [
+    {
+      "url": "https://adxj.com/insights/app-store-subscription-page-review-geo-signal/",
+      "pageType": "article",
+      "topic": "app-store",
+      "market": null,
+      "gscClicks": 0,
+      "gscImpressions": 0,
+      "ctr": 0,
+      "position": null,
+      "topQueries": [],
+      "indexStatus": "not_inspected",
+      "lastGoogleCrawl": null,
+      "googlebotRequests": 0,
+      "aiBotCrawled": true,
+      "aiBotRequests": 3,
+      "lastAiBotCrawl": "2026-06-27T00:20:00.000Z",
+      "crawlerStatuses": {
+        "200": 3
+      },
+      "recommendedAction": "refresh-answer-faq-and-internal-links",
+      "actionReason": "Article is missing or unknown in Google index inspection."
+    },
+    {
+      "url": "https://adxj.com/insights/google-play-data-safety-form-six-data-types/",
+      "pageType": "article",
+      "topic": "google-play",
+      "market": null,
+      "gscClicks": 8,
+      "gscImpressions": 920,
+      "ctr": 0.0087,
+      "position": 12.4,
+      "topQueries": [
+        {
+          "query": "Google Play 数据安全表单填错",
+          "clicks": 3,
+          "impressions": 310,
+          "ctr": 0.0097,
+          "position": 9.8
+        }
+      ],
+      "indexStatus": "Submitted and indexed",
+      "lastGoogleCrawl": "2026-06-26T11:40:00.000Z",
+      "googlebotRequests": 6,
+      "aiBotCrawled": true,
+      "aiBotRequests": 2,
+      "lastAiBotCrawl": "2026-06-26T14:10:00.000Z",
+      "crawlerStatuses": {
+        "200": 8
+      },
+      "recommendedAction": "rewrite-title-excerpt-and-direct-answer",
+      "actionReason": "Page has impressions but weak CTR."
+    },
+    {
+      "url": "https://adxj.com/insights/tiktok-spc-ai-tool-event-feedback/",
+      "pageType": "article",
+      "topic": "tiktok-ads",
+      "market": null,
+      "gscClicks": 0,
+      "gscImpressions": 45,
+      "ctr": 0,
+      "position": 28.6,
+      "topQueries": [
+        {
+          "query": "TikTok SPC 跑偏",
+          "clicks": 0,
+          "impressions": 45,
+          "ctr": 0,
+          "position": 28.6
+        }
+      ],
+      "indexStatus": "Submitted and indexed",
+      "lastGoogleCrawl": "2026-06-25T09:15:00.000Z",
+      "googlebotRequests": 2,
+      "aiBotCrawled": false,
+      "aiBotRequests": 0,
+      "lastAiBotCrawl": null,
+      "crawlerStatuses": {
+        "200": 2
+      },
+      "recommendedAction": "strengthen-llms-topic-and-related-links",
+      "actionReason": "No AI crawler request was observed in the Cloudflare window."
+    },
+    {
+      "url": "https://adxj.com/insights/topics/app-store/",
+      "pageType": "topic",
+      "topic": "app-store",
+      "market": null,
+      "gscClicks": 2,
+      "gscImpressions": 90,
+      "ctr": 0.0222,
+      "position": 18.1,
+      "topQueries": [],
+      "indexStatus": "unknown",
+      "lastGoogleCrawl": "2026-06-26T02:00:00.000Z",
+      "googlebotRequests": 3,
+      "aiBotCrawled": false,
+      "aiBotRequests": 0,
+      "lastAiBotCrawl": null,
+      "crawlerStatuses": {
+        "200": 3
+      },
+      "recommendedAction": "monitor",
+      "actionReason": "No urgent GEO/SEO action detected."
+    },
+    {
+      "url": "https://adxj.com/markets/us/",
+      "pageType": "market",
+      "topic": null,
+      "market": "us",
+      "gscClicks": 1,
+      "gscImpressions": 30,
+      "ctr": 0.0333,
+      "position": 22.2,
+      "topQueries": [],
+      "indexStatus": "unknown",
+      "lastGoogleCrawl": "2026-06-26T07:30:00.000Z",
+      "googlebotRequests": 2,
+      "aiBotCrawled": false,
+      "aiBotRequests": 0,
+      "lastAiBotCrawl": null,
+      "crawlerStatuses": {
+        "200": 2
+      },
+      "recommendedAction": "monitor",
+      "actionReason": "No urgent GEO/SEO action detected."
+    }
+  ],
+  "errors": []
+}

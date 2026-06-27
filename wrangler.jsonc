@@ -12,6 +12,17 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    "crons": [
+      "30 1 * * *"
+    ]
+  },
+  "vars": {
+    "SITE_URL": "https://adxj.com",
+    "GEO_SEO_COLLECTION_DAYS": "7",
+    "GSC_SEARCH_ANALYTICS_ROW_LIMIT": "25000",
+    "GSC_INSPECTION_LIMIT": "25"
+  },
   "build": {
     "command": "npm run build"
   }

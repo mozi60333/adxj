@@ -41,7 +41,7 @@ if (!fs.existsSync(sitemapPath)) {
 const insightDir = path.join(root, "app", "insights");
 const articleFiles = fs
   .readdirSync(insightDir)
-  .filter((file) => file === "articles.ts" || file === "extra-articles.ts" || file.startsWith("daily-articles"))
+  .filter((file) => file === "articles.ts" || file === "extra-articles.ts" || file === "geo-signal-articles.ts" || file.startsWith("daily-articles"))
   .map((file) => path.join(insightDir, file));
 const articleText = articleFiles.map(read).join("\n");
 const slugs = [...articleText.matchAll(/slug:\s*"([^"]+)"/g)].map((match) => match[1]);
@@ -64,6 +64,35 @@ for (const topicSlug of topicSlugs) {
   if (!sitemap.includes(topicUrl)) fail(`missing topic URL in sitemap: ${topicUrl}`);
 }
 console.log(`topic pages: ${topicSlugs.length}`);
+
+const geoSignalText = read(path.join(insightDir, "geo-signal-articles.ts"));
+const geoSignalSlugs = [...geoSignalText.matchAll(/slug:\s*"([^"]+)"/g)].map((match) => match[1]);
+const geoSignalTopics = [...geoSignalText.matchAll(/topic:\s*"([^"]+)"/g)].map((match) => match[1]);
+const geoTopicCounts = geoSignalTopics.reduce((counts, topic) => {
+  counts[topic] = (counts[topic] || 0) + 1;
+  return counts;
+}, {});
+if (geoSignalSlugs.length !== 40) fail(`geo signal articles should be 40, found ${geoSignalSlugs.length}`);
+for (const topicSlug of topicSlugs) {
+  if (geoTopicCounts[topicSlug] !== 4) fail(`topic ${topicSlug} should have 4 geo signal articles, found ${geoTopicCounts[topicSlug] || 0}`);
+}
+for (const slug of geoSignalSlugs) {
+  const articleUrl = `https://adxj.com/insights/${slug}/`;
+  if (!sitemap.includes(articleUrl)) fail(`missing geo article URL in sitemap: ${articleUrl}`);
+}
+console.log(`geo signal articles: ${geoSignalSlugs.length}`);
+
+for (const textFile of ["llms.txt", "llms-full.txt", "robots.txt"]) {
+  const filePath = path.join(outDir, textFile);
+  if (!fs.existsSync(filePath)) fail(`missing built text file: ${textFile}`);
+}
+if (fs.existsSync(path.join(outDir, "llms-full.txt"))) {
+  const llmsFull = read(path.join(outDir, "llms-full.txt"));
+  for (const slug of geoSignalSlugs) {
+    if (!llmsFull.includes(`https://adxj.com/insights/${slug}/`)) fail(`missing geo article URL in llms-full: ${slug}`);
+  }
+}
+console.log("robots and llms checks passed");
 
 const htmlChecks = [
   "index.html",
