@@ -312,10 +312,10 @@ async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
 }
 
 async function fetchCloudflareCrawlData(env, siteOrigin, dateRange) {
-  if (!env.CF_API_TOKEN || !env.CF_ZONE_ID) {
+  if ((!env.CF_API_TOKEN && !env.CF_API_KEY) || !env.CF_ZONE_ID) {
     return {
       status: "skipped",
-      reason: "missing_CF_API_TOKEN_or_CF_ZONE_ID",
+      reason: "missing_cloudflare_credentials_or_CF_ZONE_ID",
       pages: {},
       errors: [],
     };
@@ -329,16 +329,13 @@ async function fetchCloudflareCrawlData(env, siteOrigin, dateRange) {
             limit: 10000
             filter: { datetime_geq: $start, datetime_leq: $end }
           ) {
+            count
             dimensions {
               clientRequestPath
-              clientRequestUserAgent
               edgeResponseStatus
               cacheStatus
               clientCountryName
               datetimeHour
-            }
-            sum {
-              requests
             }
           }
         }
@@ -348,10 +345,7 @@ async function fetchCloudflareCrawlData(env, siteOrigin, dateRange) {
 
   const data = await fetchJson("https://api.cloudflare.com/client/v4/graphql", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.CF_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
+    headers: cloudflareApiHeaders(env),
     body: JSON.stringify({
       query,
       variables: {
@@ -431,13 +425,12 @@ function aggregateCloudflareRows(groups, siteOrigin) {
 
     const url = normalizeUrl(`${siteOrigin}${path}`);
     const userAgent = dimensions.clientRequestUserAgent || "";
-    const requests = group.sum?.requests || 0;
+    const requests = group.count || group.sum?.requests || 0;
     const isGoogle = userAgent.toLowerCase().includes("googlebot");
     const aiBot = findAiBot(userAgent);
 
-    if (!isGoogle && !aiBot) continue;
-
     pages[url] ??= {
+      totalRequests: 0,
       googlebotRequests: 0,
       aiBotRequests: 0,
       lastGoogleCrawl: null,
@@ -450,6 +443,7 @@ function aggregateCloudflareRows(groups, siteOrigin) {
 
     const page = pages[url];
     const seenAt = dimensions.datetimeHour || null;
+    page.totalRequests += requests;
     if (isGoogle) {
       page.googlebotRequests += requests;
       page.lastGoogleCrawl = latestIso(page.lastGoogleCrawl, seenAt);
@@ -461,7 +455,7 @@ function aggregateCloudflareRows(groups, siteOrigin) {
     countBy(page.statuses, String(dimensions.edgeResponseStatus || "unknown"), requests);
     countBy(page.cacheStatuses, dimensions.cacheStatus || "unknown", requests);
     countBy(page.countries, dimensions.clientCountryName || "unknown", requests);
-    countBy(page.userAgents, userAgent || "unknown", requests);
+    if (userAgent) countBy(page.userAgents, userAgent, requests);
   }
 
   return pages;
@@ -496,6 +490,7 @@ function buildSnapshotItem(url, gsc, cloudflare) {
     googleCanonical: inspection.googleCanonical || null,
     userCanonical: inspection.userCanonical || null,
     lastGoogleCrawl: inspection.lastCrawlTime || cfPage.lastGoogleCrawl || null,
+    cloudflareRequests: cfPage.totalRequests || 0,
     googlebotRequests: cfPage.googlebotRequests || 0,
     aiBotCrawled: Boolean(cfPage.aiBotRequests),
     aiBotRequests: cfPage.aiBotRequests || 0,
@@ -709,7 +704,7 @@ function buildDateRange(days) {
   const now = new Date();
   const gscEnd = new Date(now.getTime() - 2 * 86400000);
   const gscStart = new Date(gscEnd.getTime() - Math.max(days - 1, 1) * 86400000);
-  const cfStart = new Date(now.getTime() - Math.max(days, 1) * 86400000);
+  const cfStart = new Date(now.getTime() - 86400000);
 
   return {
     gscStartDate: dateOnly(gscStart),
@@ -721,7 +716,7 @@ function buildDateRange(days) {
 
 function getConfigurationStatus(env) {
   return {
-    cloudflare: Boolean(env.CF_API_TOKEN && env.CF_ZONE_ID),
+    cloudflare: Boolean((env.CF_API_TOKEN || env.CF_API_KEY) && env.CF_ZONE_ID),
     googleSearchConsole: Boolean(((env.GOOGLE_SERVICE_ACCOUNT_JSON || env.GOOGLE_SERVICE_ACCOUNT_JSON_B64) || ((env.GOOGLE_OAUTH_CLIENT_JSON || env.GOOGLE_OAUTH_CLIENT_JSON_B64) && env.GOOGLE_OAUTH_REFRESH_TOKEN)) && env.GSC_SITE_URL),
     internalAuth: Boolean(env.GEO_SEO_INTERNAL_TOKEN),
     kv: Boolean(env.GEO_SEO_KV),
@@ -730,6 +725,20 @@ function getConfigurationStatus(env) {
 
 function normalizeOrigin(origin) {
   return origin.replace(/\/$/, "");
+}
+
+function cloudflareApiHeaders(env) {
+  const headers = { "Content-Type": "application/json" };
+  const apiKey = env.CF_API_KEY || (env.CF_API_TOKEN?.startsWith("cfk_") ? env.CF_API_TOKEN : null);
+
+  if (apiKey && env.CF_API_EMAIL) {
+    headers["X-Auth-Email"] = env.CF_API_EMAIL;
+    headers["X-Auth-Key"] = apiKey;
+    return headers;
+  }
+
+  headers.Authorization = `Bearer ${env.CF_API_TOKEN}`;
+  return headers;
 }
 
 function normalizeUrl(url) {
