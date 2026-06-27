@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "adxj",
+  "account_id": "7b53134f34395a51e60bcdc8fb78b77b",
   "main": "src/worker.js",
   "compatibility_date": "2026-06-21",
   "assets": {
@@ -19,6 +20,8 @@
   },
   "vars": {
     "SITE_URL": "https://adxj.com",
+    "CF_ZONE_ID": "0698f84ed5697542e78d1605e218368f",
+    "GSC_SITE_URL": "sc-domain:adxj.com",
     "GEO_SEO_COLLECTION_DAYS": "7",
     "GSC_SEARCH_ANALYTICS_ROW_LIMIT": "25000",
     "GSC_INSPECTION_LIMIT": "25"

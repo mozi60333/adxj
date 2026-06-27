@@ -29,6 +29,21 @@ wrangler secret put GOOGLE_SERVICE_ACCOUNT_JSON_B64
 
 `GOOGLE_SERVICE_ACCOUNT_JSON_B64` 是 Google service account JSON 的 base64 编码。服务账号需要加入 Google Search Console 属性用户。
 
+如果使用 Google OAuth client 而不是 service account，则改用：
+
+```bash
+wrangler secret put GOOGLE_OAUTH_CLIENT_JSON_B64
+wrangler secret put GOOGLE_OAUTH_REFRESH_TOKEN
+```
+
+本地生成 Google refresh token：
+
+```bash
+npm run gsc:oauth -- --client /path/to/client_secret.json
+```
+
+打开脚本输出的 Google 授权链接，授权完成后脚本会提示把 refresh token 写入 Cloudflare Secret。不要把 refresh token 粘贴到聊天里。
+
 ## 数据来源
 
 - Cloudflare GraphQL Analytics: 读取 Googlebot、OAI-SearchBot、GPTBot、ChatGPT-User、PerplexityBot、Perplexity-User 的访问路径、状态码、缓存状态和最近访问时间。

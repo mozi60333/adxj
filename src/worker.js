@@ -240,13 +240,13 @@ function prioritizeUrls(urls) {
 }
 
 async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
-  const serviceAccount = getGoogleServiceAccount(env);
+  const googleAccessToken = await getGoogleAccessTokenFromEnv(env);
   const gscSiteUrl = env.GSC_SITE_URL;
 
-  if (!serviceAccount || !gscSiteUrl) {
+  if (!googleAccessToken || !gscSiteUrl) {
     return {
       status: "skipped",
-      reason: "missing_google_service_account_or_GSC_SITE_URL",
+      reason: "missing_google_auth_or_GSC_SITE_URL",
       pages: {},
       inspections: {},
       sitemaps: [],
@@ -254,11 +254,10 @@ async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
     };
   }
 
-  const accessToken = await getGoogleAccessToken(serviceAccount);
   const siteParam = encodeURIComponent(gscSiteUrl);
   const searchAnalytics = await fetchJson(`https://www.googleapis.com/webmasters/v3/sites/${siteParam}/searchAnalytics/query`, {
     method: "POST",
-    headers: googleHeaders(accessToken),
+    headers: googleHeaders(googleAccessToken),
     body: JSON.stringify({
       startDate: dateRange.gscStartDate,
       endDate: dateRange.gscEndDate,
@@ -276,7 +275,7 @@ async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
     try {
       const inspection = await fetchJson("https://searchconsole.googleapis.com/v1/urlInspection/index:inspect", {
         method: "POST",
-        headers: googleHeaders(accessToken),
+        headers: googleHeaders(googleAccessToken),
         body: JSON.stringify({
           inspectionUrl: url,
           siteUrl: gscSiteUrl,
@@ -294,7 +293,7 @@ async function fetchGoogleSearchConsoleData(env, siteOrigin, urls, dateRange) {
   let sitemaps = [];
   try {
     const sitemapData = await fetchJson(`https://www.googleapis.com/webmasters/v3/sites/${siteParam}/sitemaps`, {
-      headers: googleHeaders(accessToken),
+      headers: googleHeaders(googleAccessToken),
     });
     sitemaps = sitemapData.sitemap || [];
   } catch (error) {
@@ -607,7 +606,19 @@ function normalizeInspection(inspection) {
   };
 }
 
-async function getGoogleAccessToken(serviceAccount) {
+async function getGoogleAccessTokenFromEnv(env) {
+  const serviceAccount = getGoogleServiceAccount(env);
+  if (serviceAccount) return getGoogleServiceAccountAccessToken(serviceAccount);
+
+  const oauthClient = getGoogleOAuthClient(env);
+  if (oauthClient && env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    return getGoogleOAuthAccessToken(oauthClient, env.GOOGLE_OAUTH_REFRESH_TOKEN);
+  }
+
+  return null;
+}
+
+async function getGoogleServiceAccountAccessToken(serviceAccount) {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
@@ -646,6 +657,33 @@ function getGoogleServiceAccount(env) {
   return JSON.parse(json);
 }
 
+function getGoogleOAuthClient(env) {
+  const json = env.GOOGLE_OAUTH_CLIENT_JSON || (env.GOOGLE_OAUTH_CLIENT_JSON_B64 ? atob(env.GOOGLE_OAUTH_CLIENT_JSON_B64) : null);
+  if (!json) return null;
+  const config = JSON.parse(json);
+  const client = config.web || config.installed;
+  if (!client?.client_id || !client?.client_secret) return null;
+  return {
+    clientId: client.client_id,
+    clientSecret: client.client_secret,
+  };
+}
+
+async function getGoogleOAuthAccessToken(client, refreshToken) {
+  const body = new URLSearchParams({
+    client_id: client.clientId,
+    client_secret: client.clientSecret,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+  });
+  const tokenData = await fetchJson("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  return tokenData.access_token;
+}
+
 function googleHeaders(accessToken) {
   return {
     Authorization: `Bearer ${accessToken}`,
@@ -682,7 +720,7 @@ function buildDateRange(days) {
 function getConfigurationStatus(env) {
   return {
     cloudflare: Boolean(env.CF_API_TOKEN && env.CF_ZONE_ID),
-    googleSearchConsole: Boolean((env.GOOGLE_SERVICE_ACCOUNT_JSON || env.GOOGLE_SERVICE_ACCOUNT_JSON_B64) && env.GSC_SITE_URL),
+    googleSearchConsole: Boolean(((env.GOOGLE_SERVICE_ACCOUNT_JSON || env.GOOGLE_SERVICE_ACCOUNT_JSON_B64) || ((env.GOOGLE_OAUTH_CLIENT_JSON || env.GOOGLE_OAUTH_CLIENT_JSON_B64) && env.GOOGLE_OAUTH_REFRESH_TOKEN)) && env.GSC_SITE_URL),
     internalAuth: Boolean(env.GEO_SEO_INTERNAL_TOKEN),
     kv: Boolean(env.GEO_SEO_KV),
   };

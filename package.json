@@ -7,6 +7,7 @@
     "build": "next build",
     "geo:optimize": "node scripts/geo-seo-optimize.mjs",
     "geo:optimize:mock": "node scripts/geo-seo-optimize.mjs --mock",
+    "gsc:oauth": "node scripts/google-search-console-oauth.mjs",
     "seo:audit": "node scripts/seo-audit.mjs",
     "lint": "eslint .",
     "clean": "next clean"
