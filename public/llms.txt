@@ -39,4 +39,19 @@ ADXJ.COM 是蓝鲸出海旗下全球化效果营销与开发者服务入口，�
 - CPA 网盟: https://adxj.com/insights/topics/cpa-network/
 - ASO: https://adxj.com/insights/topics/aso/
 
+## 今日 GEO/SEO 文章
+
+2026-06-27 新增 40 篇高意图问题型文章，每个专题 4 篇，均包含直接答案、FAQ、市场标签、专题入口、服务 CTA 和结构化数据。完整 URL 列表见 https://adxj.com/llms-full.txt
+
+- App Store 今日文章: https://adxj.com/insights/topics/app-store/
+- Google Play 今日文章: https://adxj.com/insights/topics/google-play/
+- Meta Ads 今日文章: https://adxj.com/insights/topics/meta-ads/
+- TikTok Ads 今日文章: https://adxj.com/insights/topics/tiktok-ads/
+- Telegram 今日文章: https://adxj.com/insights/topics/telegram/
+- AI 应用今日文章: https://adxj.com/insights/topics/ai-apps/
+- SLOTS 今日文章: https://adxj.com/insights/topics/slots/
+- 现金贷今日文章: https://adxj.com/insights/topics/cash-loan/
+- CPA 网盟今日文章: https://adxj.com/insights/topics/cpa-network/
+- ASO 今日文章: https://adxj.com/insights/topics/aso/
+
 完整索引: https://adxj.com/llms-full.txt
