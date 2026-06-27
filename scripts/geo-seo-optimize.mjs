@@ -36,6 +36,7 @@ async function loadSnapshot() {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
+      "User-Agent": "Mozilla/5.0 (compatible; ADXJ-GEO-SEO-Automation/1.0; +https://adxj.com)",
     },
   });
 

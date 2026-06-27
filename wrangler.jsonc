@@ -24,9 +24,15 @@
     "GSC_SITE_URL": "sc-domain:adxj.com",
     "GEO_SEO_COLLECTION_DAYS": "7",
     "GSC_SEARCH_ANALYTICS_ROW_LIMIT": "25000",
-    "GSC_INSPECTION_LIMIT": "25"
+    "GSC_INSPECTION_LIMIT": "0"
   },
+  "kv_namespaces": [
+    {
+      "binding": "GEO_SEO_KV",
+      "id": "6fc21249c7ff4a9b9a0ca12f40e8727b"
+    }
+  ],
   "build": {
-    "command": "npm run build"
+    "command": "node ./node_modules/next/dist/bin/next build"
   }
 }

@@ -9,6 +9,7 @@ const AI_BOT_PATTERNS = [
   "perplexitybot",
   "perplexity-user",
 ];
+const REPORT_TIME_ZONE = "Asia/Shanghai";
 
 const worker = {
   async fetch(request, env) {
@@ -126,8 +127,9 @@ async function runAndStoreSnapshot(env, meta) {
 }
 
 async function buildSnapshot(env, meta) {
-  const generatedAt = new Date().toISOString();
-  const snapshotDate = generatedAt.slice(0, 10);
+  const now = new Date();
+  const generatedAt = now.toISOString();
+  const snapshotDate = dateOnly(now);
   const siteOrigin = normalizeOrigin(env.SITE_URL || SITE_URL);
   const dateRange = buildDateRange(Number(env.GEO_SEO_COLLECTION_DAYS || 7));
   const publicIndexes = await fetchPublicIndexes(env, siteOrigin);
@@ -757,7 +759,14 @@ function countBy(target, key, value) {
 }
 
 function dateOnly(date) {
-  return date.toISOString().slice(0, 10);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: REPORT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function jsonResponse(body, status = 200) {
