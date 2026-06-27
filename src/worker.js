@@ -10,6 +10,10 @@ const AI_BOT_PATTERNS = [
   "perplexity-user",
 ];
 const REPORT_TIME_ZONE = "Asia/Shanghai";
+const DASHBOARD_PATH = "/internal/geo-seo/dashboard";
+const DASHBOARD_SESSION_COOKIE = "adxj_geo_dashboard";
+const DASHBOARD_SESSION_SECONDS = 8 * 60 * 60;
+const NOINDEX_HEADER = "noindex, nofollow, noarchive";
 
 const worker = {
   async fetch(request, env) {
@@ -44,6 +48,10 @@ export default worker;
 
 async function handleGeoSeoRequest(request, env) {
   const url = new URL(request.url);
+
+  if (url.pathname === DASHBOARD_PATH || url.pathname.startsWith(`${DASHBOARD_PATH}/`)) {
+    return handleDashboardRequest(request, env);
+  }
 
   if (!isAuthorized(request, env)) {
     return jsonResponse({ error: "unauthorized" }, 401);
@@ -82,6 +90,122 @@ function isAuthorized(request, env) {
   return request.headers.get("Authorization") === `Bearer ${expected}`;
 }
 
+async function handleDashboardRequest(request, env) {
+  const url = new URL(request.url);
+  const isSessionValid = await hasDashboardSession(request, env);
+
+  if ((url.pathname === DASHBOARD_PATH || url.pathname === `${DASHBOARD_PATH}/`) && request.method === "GET") {
+    return htmlResponse(isSessionValid ? renderDashboardPage() : renderDashboardLoginPage());
+  }
+
+  if (url.pathname === `${DASHBOARD_PATH}/login` && request.method === "POST") {
+    return handleDashboardLogin(request, env);
+  }
+
+  if (url.pathname === `${DASHBOARD_PATH}/logout` && request.method === "POST") {
+    return redirectResponse(DASHBOARD_PATH, {
+      "Set-Cookie": clearDashboardCookie(),
+    });
+  }
+
+  if (!isSessionValid) {
+    return jsonResponse({ error: "unauthorized" }, 401);
+  }
+
+  if (url.pathname === `${DASHBOARD_PATH}/api/latest` && request.method === "GET") {
+    return readSnapshot(env, SNAPSHOT_LATEST_KEY);
+  }
+
+  if (url.pathname === `${DASHBOARD_PATH}/api/download` && request.method === "GET") {
+    return downloadSnapshot(env, SNAPSHOT_LATEST_KEY);
+  }
+
+  if (url.pathname === `${DASHBOARD_PATH}/api/run` && request.method === "POST") {
+    const snapshot = await runAndStoreSnapshot(env, { trigger: "dashboard" });
+    return jsonResponse(snapshot);
+  }
+
+  return jsonResponse({ error: "not_found" }, 404);
+}
+
+async function handleDashboardLogin(request, env) {
+  if (!env.GEO_SEO_INTERNAL_TOKEN) {
+    return htmlResponse(renderDashboardLoginPage("Dashboard token is not configured."), 503);
+  }
+
+  const form = await request.formData();
+  const token = String(form.get("token") || "");
+
+  if (token !== env.GEO_SEO_INTERNAL_TOKEN) {
+    return htmlResponse(renderDashboardLoginPage("Token is incorrect."), 401);
+  }
+
+  const session = await createDashboardSession(env);
+  return redirectResponse(DASHBOARD_PATH, {
+    "Set-Cookie": dashboardCookie(session),
+  });
+}
+
+async function hasDashboardSession(request, env) {
+  if (!env.GEO_SEO_INTERNAL_TOKEN) return false;
+  const session = getCookie(request, DASHBOARD_SESSION_COOKIE);
+  if (!session) return false;
+
+  const [issuedAtValue, signature] = session.split(".");
+  const issuedAt = Number(issuedAtValue);
+  if (!issuedAt || !signature) return false;
+
+  const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+  if (ageSeconds < 0 || ageSeconds > DASHBOARD_SESSION_SECONDS) return false;
+
+  const expected = await signDashboardValue(issuedAtValue, env);
+  return timingSafeEqual(signature, expected);
+}
+
+async function createDashboardSession(env) {
+  const issuedAt = String(Math.floor(Date.now() / 1000));
+  const signature = await signDashboardValue(issuedAt, env);
+  return `${issuedAt}.${signature}`;
+}
+
+async function signDashboardValue(value, env) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(env.GEO_SEO_INTERNAL_TOKEN),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return base64UrlBytes(signature);
+}
+
+function getCookie(request, name) {
+  const cookie = request.headers.get("Cookie") || "";
+  for (const part of cookie.split(";")) {
+    const [key, ...valueParts] = part.trim().split("=");
+    if (key === name) return valueParts.join("=");
+  }
+  return "";
+}
+
+function dashboardCookie(value) {
+  return `${DASHBOARD_SESSION_COOKIE}=${value}; Max-Age=${DASHBOARD_SESSION_SECONDS}; Path=${DASHBOARD_PATH}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function clearDashboardCookie() {
+  return `${DASHBOARD_SESSION_COOKIE}=; Max-Age=0; Path=${DASHBOARD_PATH}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function timingSafeEqual(left, right) {
+  if (left.length !== right.length) return false;
+  let mismatch = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return mismatch === 0;
+}
+
 async function readSnapshot(env, key) {
   if (!env.GEO_SEO_KV) {
     return jsonResponse({ error: "missing_GEO_SEO_KV_binding" }, 503);
@@ -93,6 +217,28 @@ async function readSnapshot(env, key) {
   }
 
   return jsonResponse(snapshot);
+}
+
+async function downloadSnapshot(env, key) {
+  if (!env.GEO_SEO_KV) {
+    return jsonResponse({ error: "missing_GEO_SEO_KV_binding" }, 503);
+  }
+
+  const snapshot = await env.GEO_SEO_KV.get(key, "json");
+  if (!snapshot) {
+    return jsonResponse({ error: "snapshot_not_found", key }, 404);
+  }
+
+  const date = snapshot.snapshotDate || "latest";
+  return new Response(JSON.stringify(snapshot, null, 2), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Content-Disposition": `attachment; filename="geo-seo-snapshot-${date}.json"`,
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": NOINDEX_HEADER,
+    },
+  });
 }
 
 async function runAndStoreSnapshot(env, meta) {
@@ -778,12 +924,597 @@ function dateOnly(date) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+function renderDashboardLoginPage(error = "") {
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="${NOINDEX_HEADER}">
+  <title>ADXJ GEO/SEO Internal Login</title>
+  <style>
+    :root { color-scheme: light; --ink:#14201c; --muted:#5d6a64; --line:#dce4df; --paper:#f7faf8; --panel:#ffffff; --accent:#0f766e; --danger:#b42318; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(420px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 28px; box-shadow: 0 18px 60px rgba(20, 32, 28, .08); }
+    h1 { margin: 0 0 8px; font-size: 24px; letter-spacing: 0; }
+    p { margin: 0 0 22px; color: var(--muted); line-height: 1.6; }
+    label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; font-weight: 700; }
+    input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; color: var(--ink); font: inherit; }
+    button { width: 100%; min-height: 44px; margin-top: 14px; border: 0; border-radius: 6px; background: var(--accent); color: white; font-weight: 800; cursor: pointer; }
+    .error { margin: 0 0 14px; padding: 10px 12px; border-radius: 6px; background: #fff4f2; border: 1px solid #ffd1cc; color: var(--danger); font-size: 13px; }
+    .hint { margin-top: 16px; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ADXJ GEO/SEO</h1>
+    <p>内部可视化观察页。输入内部 token 后查看最新 snapshot、搜索表现和抓取状态。</p>
+    ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
+    <form method="post" action="${DASHBOARD_PATH}/login">
+      <label for="token">Internal token</label>
+      <input id="token" name="token" type="password" autocomplete="current-password" required autofocus>
+      <button type="submit">登录</button>
+    </form>
+    <div class="hint">页面不会进入导航、sitemap 或 llms 索引。</div>
+  </main>
+</body>
+</html>`;
+}
+
+function renderDashboardPage() {
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="${NOINDEX_HEADER}">
+  <title>ADXJ GEO/SEO Monitor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#14201c;
+      --muted:#5d6a64;
+      --line:#dce4df;
+      --paper:#f7faf8;
+      --panel:#ffffff;
+      --accent:#0f766e;
+      --accent-soft:#dff4ef;
+      --amber:#b45309;
+      --amber-soft:#fff7ed;
+      --red:#b42318;
+      --red-soft:#fff4f2;
+      --blue:#2563eb;
+      --blue-soft:#eff6ff;
+      --shadow:0 12px 40px rgba(20,32,28,.07);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    a { color: inherit; }
+    button, input, select { font: inherit; }
+    .shell { width: min(1500px, calc(100vw - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: clamp(26px, 3vw, 40px); letter-spacing: 0; }
+    .subtitle { margin-top: 8px; color: var(--muted); line-height: 1.6; max-width: 780px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .btn { min-height: 38px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 0 12px; font-weight: 800; cursor: pointer; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .btn.warn { background: var(--amber-soft); border-color: #fed7aa; color: var(--amber); }
+    .btn:disabled { opacity: .55; cursor: wait; }
+    .grid { display: grid; gap: 12px; }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 12px; }
+    .panels { grid-template-columns: 1.2fr .8fr; align-items: start; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+    .metric { min-height: 112px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    .metric span { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .metric strong { font-size: clamp(24px, 3vw, 36px); letter-spacing: 0; }
+    .metric small { color: var(--muted); line-height: 1.4; }
+    .section { padding: 16px; }
+    .section h2 { margin: 0 0 14px; font-size: 17px; letter-spacing: 0; }
+    .status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .status { border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: #fbfdfc; }
+    .status b { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; min-height: 24px; border-radius: 999px; padding: 0 9px; font-size: 12px; font-weight: 900; background: var(--blue-soft); color: var(--blue); }
+    .pill.ok { background: var(--accent-soft); color: var(--accent); }
+    .pill.error { background: var(--red-soft); color: var(--red); }
+    .pill.warn { background: var(--amber-soft); color: var(--amber); }
+    .bar-list { display: grid; gap: 10px; }
+    .bar-row { display: grid; grid-template-columns: minmax(120px, 1fr) 4fr 64px; gap: 10px; align-items: center; font-size: 13px; }
+    .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .bar-track { height: 10px; background: #edf3ef; border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: inherit; }
+    .bar-value { text-align: right; font-weight: 900; }
+    .notice { margin-top: 12px; padding: 12px; border-radius: 6px; background: var(--blue-soft); color: #1e3a8a; line-height: 1.55; font-size: 13px; }
+    .filters { display: grid; grid-template-columns: 1.5fr repeat(5, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+    input, select { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); padding: 0 10px; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: white; }
+    table { width: 100%; border-collapse: collapse; min-width: 1180px; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid #edf2ef; text-align: left; vertical-align: top; font-size: 13px; }
+    th { position: sticky; top: 0; z-index: 1; background: #f8fbf9; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0; }
+    tr:last-child td { border-bottom: 0; }
+    .url-cell { max-width: 360px; overflow-wrap: anywhere; font-weight: 800; }
+    .muted { color: var(--muted); }
+    .reason { max-width: 260px; color: var(--muted); line-height: 1.45; }
+    .error-box { display: none; margin: 12px 0; padding: 12px; border: 1px solid #ffd1cc; border-radius: 6px; background: var(--red-soft); color: var(--red); line-height: 1.55; }
+    .loading { color: var(--muted); padding: 12px 0; }
+    .footer-note { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    @media (max-width: 1100px) { .metrics, .panels, .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 720px) { .shell { width: min(100vw - 20px, 1500px); padding-top: 16px; } header { display: block; } .actions { justify-content: flex-start; margin-top: 14px; } .metrics, .panels, .status-grid, .filters { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>ADXJ GEO/SEO Monitor</h1>
+        <div class="subtitle" id="snapshotMeta">读取内部 snapshot 中...</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="refreshButton" type="button">刷新 latest</button>
+        <button class="btn primary" id="runButton" type="button">手动生成 snapshot</button>
+        <button class="btn" id="downloadButton" type="button">下载 JSON</button>
+        <form method="post" action="${DASHBOARD_PATH}/logout">
+          <button class="btn warn" type="submit">退出</button>
+        </form>
+      </div>
+    </header>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <section class="grid metrics" id="metrics"></section>
+
+    <section class="grid panels">
+      <div class="card section">
+        <h2>数据源状态</h2>
+        <div class="status-grid" id="sourceStatus"></div>
+        <div class="notice">AI bot 精准 User-Agent 抓取状态第一版不做精确归因；当前页面使用 Cloudflare GraphQL 聚合请求、状态码和 GSC 数据。后续接入 Logpush/HTTP request logs 后，可精确区分 GPTBot、Googlebot、PerplexityBot。</div>
+      </div>
+      <div class="card section">
+        <h2>推荐动作分布</h2>
+        <div class="bar-list" id="actionBars"></div>
+      </div>
+      <div class="card section">
+        <h2>页面类型分布</h2>
+        <div class="bar-list" id="typeBars"></div>
+      </div>
+      <div class="card section">
+        <h2>状态码分布</h2>
+        <div class="bar-list" id="statusBars"></div>
+      </div>
+      <div class="card section" style="grid-column: 1 / -1;">
+        <h2>Cloudflare 请求 Top URL</h2>
+        <div class="bar-list" id="requestBars"></div>
+      </div>
+    </section>
+
+    <section class="card section" style="margin-top: 12px;">
+      <h2>URL 明细</h2>
+      <div class="filters">
+        <input id="searchInput" type="search" placeholder="搜索 URL、topic、market、query、原因">
+        <select id="typeFilter"></select>
+        <select id="topicFilter"></select>
+        <select id="marketFilter"></select>
+        <select id="actionFilter"></select>
+        <select id="statusFilter"></select>
+      </div>
+      <div class="filters" style="grid-template-columns: minmax(180px, 240px) minmax(140px, 180px);">
+        <select id="sortSelect">
+          <option value="priority">按优先级排序</option>
+          <option value="impressions">按展示排序</option>
+          <option value="clicks">按点击排序</option>
+          <option value="requests">按 Cloudflare 请求排序</option>
+          <option value="ctr">按 CTR 排序</option>
+          <option value="position">按排名排序</option>
+        </select>
+        <select id="directionSelect">
+          <option value="desc">降序</option>
+          <option value="asc">升序</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>URL</th>
+              <th>类型</th>
+              <th>Topic/Market</th>
+              <th>展示</th>
+              <th>点击</th>
+              <th>CTR</th>
+              <th>排名</th>
+              <th>CF 请求</th>
+              <th>状态码</th>
+              <th>推荐动作</th>
+              <th>原因</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="11" class="loading">正在加载...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footer-note" id="tableNote"></div>
+    </section>
+  </div>
+  <script>
+    const state = {
+      snapshot: null,
+      filters: { search: "", type: "", topic: "", market: "", action: "", status: "" },
+      sort: "priority",
+      direction: "desc",
+      busy: false,
+    };
+
+    const actionPriority = {
+      "investigate-crawl-status-code": 5,
+      "refresh-answer-faq-and-internal-links": 4,
+      "rewrite-title-excerpt-and-direct-answer": 3,
+      "strengthen-llms-topic-and-related-links": 2,
+      monitor: 1,
+    };
+    const numberFormatter = new Intl.NumberFormat("en-US");
+
+    const elements = {
+      metrics: document.getElementById("metrics"),
+      sourceStatus: document.getElementById("sourceStatus"),
+      actionBars: document.getElementById("actionBars"),
+      typeBars: document.getElementById("typeBars"),
+      statusBars: document.getElementById("statusBars"),
+      requestBars: document.getElementById("requestBars"),
+      tableBody: document.getElementById("tableBody"),
+      tableNote: document.getElementById("tableNote"),
+      snapshotMeta: document.getElementById("snapshotMeta"),
+      errorBox: document.getElementById("errorBox"),
+      refreshButton: document.getElementById("refreshButton"),
+      runButton: document.getElementById("runButton"),
+      downloadButton: document.getElementById("downloadButton"),
+      searchInput: document.getElementById("searchInput"),
+      typeFilter: document.getElementById("typeFilter"),
+      topicFilter: document.getElementById("topicFilter"),
+      marketFilter: document.getElementById("marketFilter"),
+      actionFilter: document.getElementById("actionFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      sortSelect: document.getElementById("sortSelect"),
+      directionSelect: document.getElementById("directionSelect"),
+    };
+
+    elements.refreshButton.addEventListener("click", () => loadSnapshot());
+    elements.runButton.addEventListener("click", () => runSnapshot());
+    elements.downloadButton.addEventListener("click", () => downloadSnapshot());
+    elements.searchInput.addEventListener("input", (event) => { state.filters.search = event.target.value; render(); });
+    for (const [key, element] of [["type", elements.typeFilter], ["topic", elements.topicFilter], ["market", elements.marketFilter], ["action", elements.actionFilter], ["status", elements.statusFilter]]) {
+      element.addEventListener("change", (event) => { state.filters[key] = event.target.value; render(); });
+    }
+    elements.sortSelect.addEventListener("change", (event) => { state.sort = event.target.value; render(); });
+    elements.directionSelect.addEventListener("change", (event) => { state.direction = event.target.value; render(); });
+
+    loadSnapshot();
+
+    async function loadSnapshot() {
+      return withBusy("读取 latest 中...", async () => {
+        state.snapshot = await apiJson("${DASHBOARD_PATH}/api/latest");
+        render();
+      });
+    }
+
+    async function runSnapshot() {
+      return withBusy("正在生成新的 snapshot，可能需要几秒...", async () => {
+        state.snapshot = await apiJson("${DASHBOARD_PATH}/api/run", { method: "POST" });
+        render();
+      });
+    }
+
+    async function withBusy(message, task) {
+      state.busy = true;
+      setButtons();
+      showError("");
+      elements.snapshotMeta.textContent = message;
+      try {
+        await task();
+      } catch (error) {
+        showError(error.message || String(error));
+      } finally {
+        state.busy = false;
+        setButtons();
+      }
+    }
+
+    async function apiJson(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { Accept: "application/json", ...(options.headers || {}) },
+      });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!response.ok) throw new Error(data.error || text || "Request failed");
+      return data;
+    }
+
+    function render() {
+      if (!state.snapshot) return;
+      const snapshot = state.snapshot;
+      const items = snapshot.items || [];
+      const summary = snapshot.summary || {};
+      const clicks = sum(items, "gscClicks");
+      const impressions = sum(items, "gscImpressions");
+      const requests = sum(items, "cloudflareRequests");
+      const pending = items.filter((item) => item.recommendedAction && item.recommendedAction !== "monitor").length;
+
+      elements.snapshotMeta.textContent = "Snapshot " + (snapshot.snapshotDate || "-") + " / generated " + formatDateTime(snapshot.generatedAt) + " / GSC " + rangeText(snapshot.dateRange);
+      elements.metrics.innerHTML = [
+        metric("总 URL", formatNumber(summary.totalUrls ?? items.length), "纳入 sitemap 与 llms 的可优化页面"),
+        metric("文章", formatNumber(summary.articles || 0), "专题 " + formatNumber(summary.topics || 0) + " / 市场页 " + formatNumber(summary.markets || 0)),
+        metric("GSC 展示", formatNumber(impressions), "点击 " + formatNumber(clicks) + " / CTR " + formatPercent(clicks / Math.max(impressions, 1))),
+        metric("Cloudflare 请求", formatNumber(requests), "最近 24 小时聚合请求"),
+        metric("待处理动作", formatNumber(pending), "monitor 之外的优化候选"),
+        metric("索引/检查", formatNumber(summary.indexedOrInspected || 0), "URL Inspection 当前抽样结果"),
+        metric("Googlebot", formatNumber(summary.googlebotCrawled || 0), "精准 UA 需 Logpush 增强"),
+        metric("AI Bot", formatNumber(summary.aiBotCrawled || 0), "精准 UA 需 Logpush 增强"),
+      ].join("");
+
+      renderSources(snapshot);
+      syncFilters(items);
+      renderBars(elements.actionBars, objectEntries(summary.actionCounts || countByKey(items, "recommendedAction")));
+      renderBars(elements.typeBars, objectEntries(countByKey(items, "pageType")));
+      renderBars(elements.statusBars, objectEntries(statusCounts(items)));
+      renderBars(elements.requestBars, topRequests(items), { urlLabels: true });
+      renderTable(items);
+    }
+
+    function renderSources(snapshot) {
+      const status = snapshot.sourceStatus || {};
+      const publicIndexes = status.publicIndexes || {};
+      const entries = [
+        ["Google Search Console", status.googleSearchConsole],
+        ["Cloudflare", status.cloudflare],
+        ["sitemap.xml", publicIndexes.sitemap],
+        ["llms-full.txt", publicIndexes.llmsFull],
+      ];
+      elements.sourceStatus.innerHTML = entries.map(([label, value]) => "<div class=\\"status\\"><b>" + escapeHtml(label) + "</b>" + pill(value || "unknown") + "</div>").join("");
+      const errors = snapshot.errors || [];
+      if (errors.length) {
+        showError(errors.map((error) => (error.source || "source") + ": " + (error.message || "unknown error")).join("\\n"));
+      }
+    }
+
+    function syncFilters(items) {
+      fillSelect(elements.typeFilter, "全部类型", unique(items.map((item) => item.pageType)), state.filters.type);
+      fillSelect(elements.topicFilter, "全部 topic", unique(items.map((item) => item.topic).filter(Boolean)), state.filters.topic);
+      fillSelect(elements.marketFilter, "全部 market", unique(items.map((item) => item.market).filter(Boolean)), state.filters.market);
+      fillSelect(elements.actionFilter, "全部动作", unique(items.map((item) => item.recommendedAction).filter(Boolean)), state.filters.action);
+      fillSelect(elements.statusFilter, "全部状态码", unique(items.flatMap((item) => Object.keys(item.crawlerStatuses || {}))), state.filters.status);
+    }
+
+    function fillSelect(element, label, values, current) {
+      const options = ["<option value=\\"\\">" + escapeHtml(label) + "</option>"].concat(values.map((value) => "<option value=\\"" + escapeHtml(value) + "\\">" + escapeHtml(value) + "</option>"));
+      element.innerHTML = options.join("");
+      element.value = current;
+    }
+
+    function renderBars(target, entries, options = {}) {
+      if (!entries.length) {
+        target.innerHTML = "<div class=\\"muted\\">暂无数据</div>";
+        return;
+      }
+      const max = Math.max(...entries.map((entry) => entry.value), 1);
+      target.innerHTML = entries.slice(0, 10).map((entry) => {
+        const width = Math.max(4, Math.round((entry.value / max) * 100));
+        const label = options.urlLabels ? shortUrl(entry.label) : entry.label;
+        return "<div class=\\"bar-row\\"><div class=\\"bar-label\\" title=\\"" + escapeHtml(entry.label) + "\\">" + escapeHtml(label) + "</div><div class=\\"bar-track\\"><div class=\\"bar-fill\\" style=\\"width:" + width + "%\\"></div></div><div class=\\"bar-value\\">" + formatNumber(entry.value) + "</div></div>";
+      }).join("");
+    }
+
+    function renderTable(items) {
+      const filtered = filteredItems(items);
+      const sorted = sortItems(filtered);
+      elements.tableNote.textContent = "显示 " + formatNumber(sorted.length) + " / " + formatNumber(items.length) + " 个 URL。";
+      if (!sorted.length) {
+        elements.tableBody.innerHTML = "<tr><td colspan=\\"11\\" class=\\"loading\\">没有匹配 URL。</td></tr>";
+        return;
+      }
+      elements.tableBody.innerHTML = sorted.map((item) => {
+        const statusText = Object.keys(item.crawlerStatuses || {}).join(", ") || "-";
+        const topicMarket = [item.topic, item.market].filter(Boolean).join(" / ") || "-";
+        return "<tr>"
+          + "<td class=\\"url-cell\\"><a href=\\"" + escapeHtml(item.url) + "\\" target=\\"_blank\\" rel=\\"noreferrer\\">" + escapeHtml(stripOrigin(item.url)) + "</a><div class=\\"muted\\">" + escapeHtml(item.indexStatus || "unknown") + "</div></td>"
+          + "<td>" + pill(item.pageType || "other") + "</td>"
+          + "<td>" + escapeHtml(topicMarket) + "</td>"
+          + "<td>" + formatNumber(item.gscImpressions || 0) + "</td>"
+          + "<td>" + formatNumber(item.gscClicks || 0) + "</td>"
+          + "<td>" + formatPercent(item.ctr || 0) + "</td>"
+          + "<td>" + (item.position ? item.position.toFixed(2) : "-") + "</td>"
+          + "<td>" + formatNumber(item.cloudflareRequests || 0) + "</td>"
+          + "<td>" + escapeHtml(statusText) + "</td>"
+          + "<td>" + pill(item.recommendedAction || "monitor") + "</td>"
+          + "<td class=\\"reason\\">" + escapeHtml(item.actionReason || "-") + "</td>"
+          + "</tr>";
+      }).join("");
+    }
+
+    function filteredItems(items) {
+      const search = state.filters.search.trim().toLowerCase();
+      return items.filter((item) => {
+        if (state.filters.type && item.pageType !== state.filters.type) return false;
+        if (state.filters.topic && item.topic !== state.filters.topic) return false;
+        if (state.filters.market && item.market !== state.filters.market) return false;
+        if (state.filters.action && item.recommendedAction !== state.filters.action) return false;
+        if (state.filters.status && !Object.keys(item.crawlerStatuses || {}).includes(state.filters.status)) return false;
+        if (!search) return true;
+        const haystack = [
+          item.url,
+          item.pageType,
+          item.topic,
+          item.market,
+          item.recommendedAction,
+          item.actionReason,
+          ...(item.topQueries || []).map((query) => query.query),
+        ].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(search);
+      });
+    }
+
+    function sortItems(items) {
+      const copy = [...items];
+      const direction = state.direction === "asc" ? 1 : -1;
+      copy.sort((a, b) => {
+        const left = sortValue(a, state.sort);
+        const right = sortValue(b, state.sort);
+        if (typeof left === "string" || typeof right === "string") return String(left).localeCompare(String(right)) * direction;
+        return (left - right) * direction;
+      });
+      return copy;
+    }
+
+    function sortValue(item, key) {
+      if (key === "priority") return actionPriority[item.recommendedAction] || 0;
+      if (key === "impressions") return item.gscImpressions || 0;
+      if (key === "clicks") return item.gscClicks || 0;
+      if (key === "requests") return item.cloudflareRequests || 0;
+      if (key === "ctr") return item.ctr || 0;
+      if (key === "position") return item.position || 999;
+      return item.url || "";
+    }
+
+    function downloadSnapshot() {
+      window.location.href = "${DASHBOARD_PATH}/api/download";
+    }
+
+    function setButtons() {
+      for (const button of [elements.refreshButton, elements.runButton, elements.downloadButton]) button.disabled = state.busy;
+    }
+
+    function showError(message) {
+      elements.errorBox.style.display = message ? "block" : "none";
+      elements.errorBox.textContent = message;
+    }
+
+    function metric(label, value, hint) {
+      return "<div class=\\"card metric\\"><span>" + escapeHtml(label) + "</span><strong>" + escapeHtml(String(value)) + "</strong><small>" + escapeHtml(hint || "") + "</small></div>";
+    }
+
+    function pill(value) {
+      const normalized = String(value || "unknown");
+      let tone = "";
+      if (["ok", "monitor", "article", "topic", "market", "service", "index"].includes(normalized)) tone = " ok";
+      else if (["error", "unauthorized"].includes(normalized) || normalized.startsWith("investigate")) tone = " error";
+      else if (["skipped", "unknown", "not_inspected"].includes(normalized)) tone = " warn";
+      return "<span class=\\"pill" + tone + "\\">" + escapeHtml(normalized) + "</span>";
+    }
+
+    function objectEntries(object) {
+      return Object.entries(object || {}).map(([label, value]) => ({ label, value: Number(value) || 0 })).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+    }
+
+    function countByKey(items, key) {
+      return items.reduce((accumulator, item) => {
+        const value = item[key] || "unknown";
+        accumulator[value] = (accumulator[value] || 0) + 1;
+        return accumulator;
+      }, {});
+    }
+
+    function statusCounts(items) {
+      return items.reduce((accumulator, item) => {
+        for (const [status, count] of Object.entries(item.crawlerStatuses || {})) {
+          accumulator[status] = (accumulator[status] || 0) + Number(count || 0);
+        }
+        return accumulator;
+      }, {});
+    }
+
+    function topRequests(items) {
+      return items
+        .filter((item) => (item.cloudflareRequests || 0) > 0)
+        .sort((a, b) => (b.cloudflareRequests || 0) - (a.cloudflareRequests || 0))
+        .slice(0, 10)
+        .map((item) => ({ label: item.url, value: item.cloudflareRequests || 0 }));
+    }
+
+    function unique(values) {
+      return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+    }
+
+    function sum(items, key) {
+      return items.reduce((total, item) => total + Number(item[key] || 0), 0);
+    }
+
+    function rangeText(range) {
+      if (!range) return "-";
+      return (range.gscStartDate || "-") + " to " + (range.gscEndDate || "-");
+    }
+
+    function formatNumber(value) {
+      return numberFormatter.format(Number(value || 0));
+    }
+
+    function formatPercent(value) {
+      return (Number(value || 0) * 100).toFixed(2) + "%";
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      return new Date(value).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false });
+    }
+
+    function stripOrigin(url) {
+      try { return new URL(url).pathname; } catch { return url; }
+    }
+
+    function shortUrl(url) {
+      const path = stripOrigin(url);
+      return path.length > 72 ? path.slice(0, 69) + "..." : path;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    }
+  </script>
+</body>
+</html>`;
+}
+
+function htmlResponse(body, status = 200) {
+  return new Response(body, {
+    status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": NOINDEX_HEADER,
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
+
+function redirectResponse(location, extraHeaders = {}) {
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: location,
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": NOINDEX_HEADER,
+      ...extraHeaders,
+    },
+  });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
+}
+
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
+      "X-Robots-Tag": NOINDEX_HEADER,
     },
   });
 }
