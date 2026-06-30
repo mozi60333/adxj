@@ -1,3 +1,4 @@
+import { dailySeoArticles20260630 } from "./daily-articles-2026-06-30";
 import { dailySeoArticles20260629 } from "./daily-articles-2026-06-29";
 import { dailySeoArticles20260628 } from "./daily-articles-2026-06-28";
 import { dailySeoArticles20260626 } from "./daily-articles-2026-06-26";
@@ -6,6 +7,7 @@ import { dailySeoArticles20260623 } from "./daily-articles-2026-06-23";
 import type { InsightArticle } from "./articles";
 
 export const dailySeoArticles: InsightArticle[] = [
+  ...dailySeoArticles20260630,
   ...dailySeoArticles20260629,
   ...dailySeoArticles20260628,
   ...dailySeoArticles20260626,
